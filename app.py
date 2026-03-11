@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, redirect, session
 import sqlite3
-import os
 
 app = Flask(__name__)
 app.secret_key = "motorista24h"
@@ -11,6 +10,7 @@ def db():
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     return conn
+
 
 def criar_tabelas():
 
@@ -42,24 +42,29 @@ def criar_tabelas():
 criar_tabelas()
 
 # LOGIN TESTE
-EMPRESA_TESTE_USER = "Wagner"
-EMPRESA_TESTE_PASS = "88691553"
+EMPRESA_USER = "Wagner"
+EMPRESA_PASS = "88691553"
 
-# PAGINA INICIAL
+ADMIN_USER = "Troia"
+ADMIN_PASS = "88691553"
+
 @app.route("/")
 def index():
     return render_template("login.html")
 
-# LOGIN
 @app.route("/login", methods=["POST"])
 def login():
 
     usuario = request.form["usuario"]
     senha = request.form["senha"]
 
-    if usuario == EMPRESA_TESTE_USER and senha == EMPRESA_TESTE_PASS:
+    if usuario == EMPRESA_USER and senha == EMPRESA_PASS:
         session["empresa"] = True
         return redirect("/empresa")
+
+    if usuario == ADMIN_USER and senha == ADMIN_PASS:
+        session["admin"] = True
+        return redirect("/admin")
 
     conn = db()
 
@@ -74,7 +79,7 @@ def login():
 
     return redirect("/")
 
-# CADASTRO MOTORISTA
+
 @app.route("/cadastro_motorista", methods=["GET","POST"])
 def cadastro_motorista():
 
@@ -98,7 +103,7 @@ def cadastro_motorista():
 
     return render_template("cadastro_motorista.html")
 
-# PAINEL MOTORISTA
+
 @app.route("/motorista")
 def motorista():
 
@@ -113,12 +118,9 @@ def motorista():
 
     return render_template("motorista.html", entregas=entregas)
 
-# ALTERAR STATUS MOTORISTA
+
 @app.route("/status_motorista", methods=["POST"])
 def status_motorista():
-
-    if "motorista" not in session:
-        return redirect("/")
 
     status = request.form["status"]
 
@@ -132,6 +134,64 @@ def status_motorista():
     conn.commit()
 
     return redirect("/motorista")
+
+
+@app.route("/empresa")
+def empresa():
+
+    if "empresa" not in session:
+        return redirect("/")
+
+    conn = db()
+
+    entregas = conn.execute(
+        "SELECT * FROM entregas"
+    ).fetchall()
+
+    return render_template("empresa.html", entregas=entregas)
+
+
+@app.route("/criar_entrega", methods=["POST"])
+def criar_entrega():
+
+    coleta = request.form["coleta"]
+    entrega = request.form["entrega"]
+    valor = request.form["valor"]
+
+    conn = db()
+
+    conn.execute(
+    "INSERT INTO entregas (coleta, entrega, valor) VALUES (?, ?, ?)",
+    (coleta, entrega, valor)
+    )
+
+    conn.commit()
+
+    return redirect("/empresa")
+
+
+@app.route("/admin")
+def admin():
+
+    if "admin" not in session:
+        return redirect("/")
+
+    conn = db()
+
+    motoristas = conn.execute(
+        "SELECT * FROM motoristas"
+    ).fetchall()
+
+    entregas = conn.execute(
+        "SELECT * FROM entregas"
+    ).fetchall()
+
+    return render_template(
+        "admin.html",
+        motoristas=motoristas,
+        entregas=entregas
+    )
+
 
 if __name__ == "__main__":
     app.run()
