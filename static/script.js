@@ -12,7 +12,6 @@ fetch("/calcular_distancia",{
 method:"POST",
 body:form
 })
-
 .then(r=>r.json())
 .then(d=>{
 
@@ -30,5 +29,4 @@ var poly=L.polyline([
 map.fitBounds(poly.getBounds())
 
 })
-
 }
