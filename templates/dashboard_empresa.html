@@ -1,26 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Empresa</title>
+
+<link rel="stylesheet" href="/static/style.css">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script src="/static/script.js"></script>
+
+</head>
+
+<body>
+
 <div class="container">
 
-<h2>Solicitar entrega</h2>
+<h2>Nova entrega</h2>
 
 <form method="post">
 
-<input name="coleta" placeholder="Endereço coleta">
+<input id="coleta" name="coleta" placeholder="Endereço coleta">
 
-<input name="entrega" placeholder="Endereço entrega">
-
-<input name="distancia" placeholder="Distância km">
+<input id="entrega" name="entrega" placeholder="Endereço entrega">
 
 <select name="veiculo">
-
 <option value="moto">Moto</option>
 <option value="carro">Carro</option>
 <option value="van">Van</option>
-
 </select>
 
-<button>Solicitar</button>
+<input id="distancia" name="distancia" placeholder="Distância">
+
+<button type="button" onclick="calcular()">Calcular distância</button>
+
+<button>Criar entrega</button>
 
 </form>
+
+<div id="map" style="height:300px"></div>
 
 <h2>Entregas</h2>
 
@@ -37,11 +57,13 @@
 {% for e in entregas %}
 
 <tr>
-<td>{{ e[0] }}</td>
-<td>{{ e[1] }}</td>
-<td>{{ e[2] }}</td>
-<td>R$ {{ e[5] }}</td>
-<td>{{ e[7] }}</td>
+
+<td>{{e[0]}}</td>
+<td>{{e[1]}}</td>
+<td>{{e[2]}}</td>
+<td>{{e[5]}}</td>
+<td>{{e[6]}}</td>
+
 </tr>
 
 {% endfor %}
@@ -49,3 +71,6 @@
 </table>
 
 </div>
+
+</body>
+  </html>
