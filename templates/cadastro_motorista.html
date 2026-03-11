@@ -1,33 +1,117 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
+
 <head>
-<title>Cadastro Motorista</title>
-<link rel="stylesheet" href="/static/style.css">
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Painel Motorista</title>
+
+<style>
+
+body{
+font-family:Arial;
+margin:0;
+background:#0f172a;
+color:white;
+}
+
+.topo{
+background:#020617;
+padding:15px;
+text-align:center;
+}
+
+.container{
+padding:20px;
+max-width:900px;
+margin:auto;
+}
+
+.entrega{
+
+background:#1e293b;
+padding:15px;
+margin-top:15px;
+
+border-radius:8px;
+
+}
+
+button{
+
+margin-top:10px;
+padding:10px;
+
+background:#22c55e;
+border:none;
+
+color:white;
+
+border-radius:6px;
+cursor:pointer;
+
+}
+
+input{
+margin-top:10px;
+}
+
+</style>
+
 </head>
 
 <body>
 
+<div class="topo">
+<h2>Painel do Motorista</h2>
+</div>
+
 <div class="container">
 
-<h2>Cadastro Motorista</h2>
+<h3>Saldo: R$ {{saldo}}</h3>
 
-<form method="post">
+<form action="/status_motorista" method="POST">
 
-<input name="nome" placeholder="Nome">
+<select name="status">
 
-<input name="cidade" placeholder="Cidade">
+<option value="online">Online</option>
+<option value="offline">Offline</option>
 
-<select name="veiculo">
-<option value="moto">Moto</option>
-<option value="carro">Carro</option>
-<option value="van">Van</option>
 </select>
 
-<input name="telefone" placeholder="Telefone">
-
-<button>Cadastrar</button>
+<button>Atualizar Status</button>
 
 </form>
+
+<h3>Entregas disponíveis</h3>
+
+{% for e in entregas %}
+
+{% if e[6] != "entregue" %}
+
+<div class="entrega">
+
+<p><b>Coleta:</b> {{e[1]}}</p>
+<p><b>Entrega:</b> {{e[2]}}</p>
+<p><b>Valor:</b> R$ {{e[5]}}</p>
+
+<form method="POST" enctype="multipart/form-data">
+
+<input type="hidden" name="id" value="{{e[0]}}">
+
+<input type="file" name="foto" required>
+
+<button>Finalizar Entrega</button>
+
+</form>
+
+</div>
+
+{% endif %}
+
+{% endfor %}
 
 </div>
 
