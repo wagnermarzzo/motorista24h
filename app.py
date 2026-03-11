@@ -1,17 +1,68 @@
 from flask import Flask, render_template, request, redirect, session
 import sqlite3
+import os
 
 app = Flask(__name__)
 app.secret_key = "motorista24h"
 
+UPLOAD_FOLDER = "static/uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 def db():
     return sqlite3.connect("database.db")
 
+def criar_db():
+
+    conn = db()
+    c = conn.cursor()
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS motoristas(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT,
+    cidade TEXT,
+    veiculo TEXT,
+    telefone TEXT
+    )
+    """)
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS empresas(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT,
+    cidade TEXT,
+    telefone TEXT
+    )
+    """)
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS entregas(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    coleta TEXT,
+    entrega TEXT,
+    distancia REAL,
+    veiculo TEXT,
+    valor REAL,
+    foto TEXT,
+    status TEXT
+    )
+    """)
+
+    conn.commit()
+
+criar_db()
+
 @app.route("/")
 def index():
-    return render_template("index.html")
 
-# CADASTRO MOTORISTA
+    conn = db()
+    c = conn.cursor()
+
+    moto = c.execute("SELECT count(*) FROM motoristas WHERE veiculo='moto'").fetchone()[0]
+    carro = c.execute("SELECT count(*) FROM motoristas WHERE veiculo='carro'").fetchone()[0]
+    van = c.execute("SELECT count(*) FROM motoristas WHERE veiculo='van'").fetchone()[0]
+
+    return render_template("index.html", moto=moto, carro=carro, van=van)
 
 @app.route("/cadastro_motorista", methods=["GET","POST"])
 def cadastro_motorista():
@@ -24,18 +75,13 @@ def cadastro_motorista():
         telefone = request.form["telefone"]
 
         conn = db()
-        c = conn.cursor()
-
-        c.execute("INSERT INTO motoristas VALUES (NULL,?,?,?,?)",
+        conn.execute("INSERT INTO motoristas(nome,cidade,veiculo,telefone) VALUES(?,?,?,?)",
         (nome,cidade,veiculo,telefone))
-
         conn.commit()
 
         return redirect("/login")
 
     return render_template("cadastro_motorista.html")
-
-# CADASTRO EMPRESA
 
 @app.route("/cadastro_empresa", methods=["GET","POST"])
 def cadastro_empresa():
@@ -47,18 +93,13 @@ def cadastro_empresa():
         telefone = request.form["telefone"]
 
         conn = db()
-        c = conn.cursor()
-
-        c.execute("INSERT INTO empresas VALUES (NULL,?,?,?)",
+        conn.execute("INSERT INTO empresas(nome,cidade,telefone) VALUES(?,?,?)",
         (nome,cidade,telefone))
-
         conn.commit()
 
         return redirect("/login")
 
     return render_template("cadastro_empresa.html")
-
-# LOGIN
 
 @app.route("/login", methods=["GET","POST"])
 def login():
@@ -68,25 +109,25 @@ def login():
         telefone = request.form["telefone"]
 
         conn = db()
-        c = conn.cursor()
 
-        motorista = c.execute("SELECT * FROM motoristas WHERE telefone=?",(telefone,)).fetchone()
-
-        empresa = c.execute("SELECT * FROM empresas WHERE telefone=?",(telefone,)).fetchone()
+        motorista = conn.execute("SELECT * FROM motoristas WHERE telefone=?",(telefone,)).fetchone()
+        empresa = conn.execute("SELECT * FROM empresas WHERE telefone=?",(telefone,)).fetchone()
 
         if motorista:
-            session["tipo"] = "motorista"
-            session["id"] = motorista[0]
+
+            session["tipo"]="motorista"
+            session["id"]=motorista[0]
+
             return redirect("/motorista")
 
         if empresa:
-            session["tipo"] = "empresa"
-            session["id"] = empresa[0]
+
+            session["tipo"]="empresa"
+            session["id"]=empresa[0]
+
             return redirect("/empresa")
 
     return render_template("login.html")
-
-# DASHBOARD EMPRESA
 
 @app.route("/empresa", methods=["GET","POST"])
 def empresa():
@@ -106,13 +147,13 @@ def empresa():
 
         base,km = tabela[veiculo]
 
-        valor = base + distancia * km
+        valor = base + distancia*km
 
         conn = db()
-        c = conn.cursor()
-
-        c.execute("INSERT INTO entregas VALUES (NULL,?,?,?,?,?)",
-        (coleta,entrega,distancia,veiculo,valor))
+        conn.execute("""
+        INSERT INTO entregas(coleta,entrega,distancia,veiculo,valor,status)
+        VALUES(?,?,?,?,?,?)
+        """,(coleta,entrega,distancia,veiculo,valor,"aguardando"))
 
         conn.commit()
 
@@ -121,10 +162,20 @@ def empresa():
 
     return render_template("dashboard_empresa.html",entregas=entregas)
 
-# DASHBOARD MOTORISTA
-
-@app.route("/motorista")
+@app.route("/motorista", methods=["GET","POST"])
 def motorista():
+
+    if request.method == "POST":
+
+        entrega_id = request.form["id"]
+        foto = request.files["foto"]
+
+        path = os.path.join(UPLOAD_FOLDER,foto.filename)
+        foto.save(path)
+
+        conn = db()
+        conn.execute("UPDATE entregas SET foto=?,status='entregue' WHERE id=?",(path,entrega_id))
+        conn.commit()
 
     conn = db()
     entregas = conn.execute("SELECT * FROM entregas").fetchall()
