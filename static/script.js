@@ -1,26 +1,23 @@
-document.getElementById("form").addEventListener("submit",function(e){
+function calcular(){
 
-e.preventDefault()
+let coleta=document.getElementById("coleta").value
+let entrega=document.getElementById("entrega").value
 
-let distancia = document.getElementById("distancia").value
-let veiculo = document.getElementById("veiculo").value
+let form=new FormData()
 
-let formData = new FormData()
-formData.append("distancia",distancia)
-formData.append("veiculo",veiculo)
+form.append("coleta",coleta)
+form.append("entrega",entrega)
 
-fetch("/calcular",{
-
+fetch("/calcular_distancia",{
 method:"POST",
-body:formData
-
-})
-.then(res=>res.json())
-.then(data=>{
-
-document.getElementById("valor").innerText =
-"Valor estimado: R$ "+data.valor
-
+body:form
 })
 
+.then(r=>r.json())
+.then(d=>{
+
+document.getElementById("distancia").value=d.km
+
 })
+
+}
