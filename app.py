@@ -1,235 +1,137 @@
-from flask import Flask, render_template, request, redirect, session, jsonify
+from flask import Flask, render_template, request, redirect, session
 import sqlite3
 import os
-import math
-import requests
 
 app = Flask(__name__)
 app.secret_key = "motorista24h"
 
-ADMIN_USER = "Troia"
-ADMIN_PASS = "88691553"
-
-EMPRESA_TESTE_USER = "Wagner"
-EMPRESA_TESTE_PASS = "88691553"
-
-UPLOAD = "static/uploads"
-
-if os.path.exists(UPLOAD) and not os.path.isdir(UPLOAD):
-    os.remove(UPLOAD)
-
-os.makedirs(UPLOAD, exist_ok=True)
-
+DATABASE = "database.db"
 
 def db():
-    return sqlite3.connect("database.db")
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
+    return conn
 
-
-def init_db():
+def criar_tabelas():
 
     conn = db()
-    c = conn.cursor()
 
-    c.execute("""
+    conn.execute("""
     CREATE TABLE IF NOT EXISTS motoristas(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT,
-    cidade TEXT,
-    veiculo TEXT,
-    telefone TEXT,
-    lat REAL,
-    lon REAL,
-    saldo REAL DEFAULT 0,
-    status TEXT DEFAULT 'offline',
-    pix TEXT
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT,
+        telefone TEXT,
+        cidade TEXT,
+        veiculo TEXT,
+        status TEXT DEFAULT 'offline'
     )
     """)
 
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS empresas(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT,
-    cidade TEXT,
-    telefone TEXT
-    )
-    """)
-
-    c.execute("""
+    conn.execute("""
     CREATE TABLE IF NOT EXISTS entregas(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    coleta TEXT,
-    entrega TEXT,
-    distancia REAL,
-    veiculo TEXT,
-    valor REAL,
-    status TEXT,
-    foto TEXT,
-    motorista INTEGER
-    )
-    """)
-
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS saques(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    motorista INTEGER,
-    valor REAL,
-    status TEXT
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        coleta TEXT,
+        entrega TEXT,
+        valor REAL,
+        status TEXT DEFAULT 'disponivel'
     )
     """)
 
     conn.commit()
 
+criar_tabelas()
 
-init_db()
+# LOGIN TESTE
+EMPRESA_TESTE_USER = "Wagner"
+EMPRESA_TESTE_PASS = "88691553"
 
-
+# PAGINA INICIAL
 @app.route("/")
 def index():
-
-    conn = db()
-
-    moto = conn.execute("SELECT count(*) FROM motoristas WHERE veiculo='moto'").fetchone()[0]
-    carro = conn.execute("SELECT count(*) FROM motoristas WHERE veiculo='carro'").fetchone()[0]
-    van = conn.execute("SELECT count(*) FROM motoristas WHERE veiculo='van'").fetchone()[0]
-
-    return render_template("index.html", moto=moto, carro=carro, van=van)
-
-
-@app.route("/login", methods=["GET","POST"])
-def login():
-
-    if request.method == "POST":
-
-        usuario = request.form["usuario"]
-        senha = request.form["senha"]
-
-        if usuario == ADMIN_USER and senha == ADMIN_PASS:
-            session["admin"] = True
-            return redirect("/admin")
-
-        if usuario == EMPRESA_TESTE_USER and senha == EMPRESA_TESTE_PASS:
-            session["empresa"] = 999
-            return redirect("/empresa")
-
-        conn = db()
-
-        motorista = conn.execute(
-            "SELECT * FROM motoristas WHERE telefone=?",
-            (usuario,)
-        ).fetchone()
-
-        empresa = conn.execute(
-            "SELECT * FROM empresas WHERE telefone=?",
-            (usuario,)
-        ).fetchone()
-
-        if motorista:
-            session["motorista"] = motorista[0]
-            return redirect("/motorista")
-
-        if empresa:
-            session["empresa"] = empresa[0]
-            return redirect("/empresa")
-
     return render_template("login.html")
 
+# LOGIN
+@app.route("/login", methods=["POST"])
+def login():
 
-@app.route("/empresa", methods=["GET","POST"])
-def empresa():
+    usuario = request.form["usuario"]
+    senha = request.form["senha"]
+
+    if usuario == EMPRESA_TESTE_USER and senha == EMPRESA_TESTE_PASS:
+        session["empresa"] = True
+        return redirect("/empresa")
+
+    conn = db()
+
+    motorista = conn.execute(
+        "SELECT * FROM motoristas WHERE telefone=?",
+        (usuario,)
+    ).fetchone()
+
+    if motorista:
+        session["motorista"] = motorista["id"]
+        return redirect("/motorista")
+
+    return redirect("/")
+
+# CADASTRO MOTORISTA
+@app.route("/cadastro_motorista", methods=["GET","POST"])
+def cadastro_motorista():
 
     if request.method == "POST":
 
-        coleta = request.form["coleta"]
-        entrega = request.form["entrega"]
-        distancia = float(request.form["distancia"])
+        nome = request.form["nome"]
+        telefone = request.form["telefone"]
+        cidade = request.form["cidade"]
         veiculo = request.form["veiculo"]
 
-        tabela = {
-            "moto": (10,1.5),
-            "carro": (15,2),
-            "van": (20,2.8)
-        }
-
-        base, km = tabela[veiculo]
-
-        valor = base + distancia * km
-
         conn = db()
 
-        conn.execute("""
-        INSERT INTO entregas(coleta,entrega,distancia,veiculo,valor,status)
-        VALUES(?,?,?,?,?,?)
-        """,(coleta,entrega,distancia,veiculo,valor,"aguardando"))
+        conn.execute(
+        "INSERT INTO motoristas (nome, telefone, cidade, veiculo) VALUES (?, ?, ?, ?)",
+        (nome, telefone, cidade, veiculo)
+        )
 
         conn.commit()
 
-    conn = db()
+        return redirect("/")
 
-    entregas = conn.execute("""
-    SELECT * FROM entregas ORDER BY id DESC LIMIT 50
-    """).fetchall()
+    return render_template("cadastro_motorista.html")
 
-    return render_template("dashboard_empresa.html",entregas=entregas)
-
-
-@app.route("/motorista", methods=["GET","POST"])
+# PAINEL MOTORISTA
+@app.route("/motorista")
 def motorista():
 
-    if request.method == "POST":
-
-        entrega_id = request.form["id"]
-        foto = request.files["foto"]
-
-        path = os.path.join(UPLOAD,foto.filename)
-
-        foto.save(path)
-
-        conn = db()
-
-        conn.execute("""
-        UPDATE entregas
-        SET foto=?,status='entregue'
-        WHERE id=?
-        """,(path,entrega_id))
-
-        conn.commit()
+    if "motorista" not in session:
+        return redirect("/")
 
     conn = db()
 
-    entregas = conn.execute("""
-    SELECT * FROM entregas ORDER BY id DESC LIMIT 50
-    """).fetchall()
+    entregas = conn.execute(
+        "SELECT * FROM entregas WHERE status='disponivel'"
+    ).fetchall()
 
-    saldo = conn.execute("""
-    SELECT saldo FROM motoristas WHERE id=?
-    """,(session["motorista"],)).fetchone()[0]
+    return render_template("motorista.html", entregas=entregas)
 
-    return render_template("dashboard_motorista.html",entregas=entregas,saldo=saldo)
+# ALTERAR STATUS MOTORISTA
+@app.route("/status_motorista", methods=["POST"])
+def status_motorista():
 
+    if "motorista" not in session:
+        return redirect("/")
 
-@app.route("/admin")
-def admin():
-
-    if "admin" not in session:
-        return redirect("/login")
+    status = request.form["status"]
 
     conn = db()
 
-    motoristas = conn.execute("SELECT * FROM motoristas").fetchall()
-    empresas = conn.execute("SELECT * FROM empresas").fetchall()
-    entregas = conn.execute("SELECT * FROM entregas").fetchall()
-    saques = conn.execute("SELECT * FROM saques").fetchall()
+    conn.execute(
+    "UPDATE motoristas SET status=? WHERE id=?",
+    (status, session["motorista"])
+    )
 
-    total = conn.execute("""
-    SELECT SUM(valor) FROM entregas WHERE status='entregue'
-    """).fetchone()[0] or 0
+    conn.commit()
 
-    return render_template("admin.html",
-        motoristas=motoristas,
-        empresas=empresas,
-        entregas=entregas,
-        saques=saques,
-        total=total)
+    return redirect("/motorista")
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
