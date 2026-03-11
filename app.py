@@ -10,8 +10,10 @@ app.secret_key="motorista24h"
 ADMIN_USER="Troia"
 ADMIN_PASS="88691553"
 
-UPLOAD="static/uploads"
-os.makedirs(UPLOAD, exist_ok=True)
+UPLOAD = "static/uploads"
+
+if not os.path.isdir(UPLOAD):
+    os.makedirs(UPLOAD)
 
 def db():
     return sqlite3.connect("database.db")
@@ -310,7 +312,7 @@ def admin():
 
     total=conn.execute("""
     SELECT SUM(valor) FROM entregas WHERE status='entregue'
-    """).fetchone()[0]
+    """).fetchone()[0] or 0
 
     return render_template("admin.html",
         motoristas=motoristas,
@@ -319,4 +321,5 @@ def admin():
         saques=saques,
         total=total)
 
-app.run()
+if __name__ == "__main__":
+    app.run(debug=True)
