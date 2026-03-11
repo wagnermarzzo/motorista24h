@@ -7,7 +7,7 @@ margin:0;
 
 header{
 background:#020617;
-padding:25px;
+padding:30px;
 text-align:center;
 }
 
@@ -20,7 +20,7 @@ padding:20px;
 input,select,button{
 width:100%;
 padding:12px;
-margin:6px 0;
+margin:8px 0;
 border-radius:8px;
 border:none;
 }
@@ -40,12 +40,4 @@ margin-top:20px;
 td,th{
 background:#1e293b;
 padding:10px;
-}
-
-@media(max-width:700px){
-
-table{
-font-size:12px;
-}
-
 }
