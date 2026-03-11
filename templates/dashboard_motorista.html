@@ -1,1 +1,44 @@
+<div class="container">
 
+<h2>Entregas disponíveis</h2>
+
+<table>
+
+<tr>
+<th>ID</th>
+<th>Coleta</th>
+<th>Entrega</th>
+<th>Valor</th>
+<th>Enviar foto</th>
+</tr>
+
+{% for e in entregas %}
+
+<tr>
+
+<td>{{ e[0] }}</td>
+<td>{{ e[1] }}</td>
+<td>{{ e[2] }}</td>
+<td>R$ {{ e[5] }}</td>
+
+<td>
+
+<form method="post" enctype="multipart/form-data">
+
+<input type="hidden" name="id" value="{{ e[0] }}">
+
+<input type="file" name="foto">
+
+<button>Enviar</button>
+
+</form>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
