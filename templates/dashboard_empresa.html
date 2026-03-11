@@ -1,1 +1,51 @@
+<div class="container">
 
+<h2>Solicitar entrega</h2>
+
+<form method="post">
+
+<input name="coleta" placeholder="Endereço coleta">
+
+<input name="entrega" placeholder="Endereço entrega">
+
+<input name="distancia" placeholder="Distância km">
+
+<select name="veiculo">
+
+<option value="moto">Moto</option>
+<option value="carro">Carro</option>
+<option value="van">Van</option>
+
+</select>
+
+<button>Solicitar</button>
+
+</form>
+
+<h2>Entregas</h2>
+
+<table>
+
+<tr>
+<th>ID</th>
+<th>Coleta</th>
+<th>Entrega</th>
+<th>Valor</th>
+<th>Status</th>
+</tr>
+
+{% for e in entregas %}
+
+<tr>
+<td>{{ e[0] }}</td>
+<td>{{ e[1] }}</td>
+<td>{{ e[2] }}</td>
+<td>R$ {{ e[5] }}</td>
+<td>{{ e[7] }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
