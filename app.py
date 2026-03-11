@@ -3,7 +3,6 @@ import sqlite3
 import os
 import math
 import requests
-import urllib.parse
 
 app = Flask(__name__)
 app.secret_key="motorista24h"
@@ -31,7 +30,9 @@ def init_db():
     telefone TEXT,
     lat REAL,
     lon REAL,
-    saldo REAL DEFAULT 0
+    saldo REAL DEFAULT 0,
+    status TEXT DEFAULT 'offline',
+    pix TEXT
     )
     """)
 
@@ -58,18 +59,29 @@ def init_db():
     )
     """)
 
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS saques(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    motorista INTEGER,
+    valor REAL,
+    status TEXT
+    )
+    """)
+
     conn.commit()
 
 init_db()
 
 def distancia(lat1,lon1,lat2,lon2):
-
     return math.sqrt((lat1-lat2)**2+(lon1-lon2)**2)
 
 def motorista_proximo(lat,lon):
 
     conn=db()
-    motoristas=conn.execute("SELECT * FROM motoristas").fetchall()
+
+    motoristas=conn.execute("""
+    SELECT * FROM motoristas WHERE status='online'
+    """).fetchall()
 
     melhor=None
     menor=999999
@@ -252,6 +264,37 @@ def motorista():
 
     return render_template("dashboard_motorista.html",entregas=entregas,saldo=saldo)
 
+@app.route("/status_motorista",methods=["POST"])
+def status_motorista():
+
+    status=request.form["status"]
+
+    conn=db()
+
+    conn.execute("""
+    UPDATE motoristas SET status=? WHERE id=?
+    """,(status,session["motorista"]))
+
+    conn.commit()
+
+    return redirect("/motorista")
+
+@app.route("/solicitar_saque",methods=["POST"])
+def solicitar_saque():
+
+    valor=request.form["valor"]
+
+    conn=db()
+
+    conn.execute("""
+    INSERT INTO saques(motorista,valor,status)
+    VALUES(?,?,?)
+    """,(session["motorista"],valor,"pendente"))
+
+    conn.commit()
+
+    return redirect("/motorista")
+
 @app.route("/admin")
 def admin():
 
@@ -263,10 +306,17 @@ def admin():
     motoristas=conn.execute("SELECT * FROM motoristas").fetchall()
     empresas=conn.execute("SELECT * FROM empresas").fetchall()
     entregas=conn.execute("SELECT * FROM entregas").fetchall()
+    saques=conn.execute("SELECT * FROM saques").fetchall()
+
+    total=conn.execute("""
+    SELECT SUM(valor) FROM entregas WHERE status='entregue'
+    """).fetchone()[0]
 
     return render_template("admin.html",
         motoristas=motoristas,
         empresas=empresas,
-        entregas=entregas)
+        entregas=entregas,
+        saques=saques,
+        total=total)
 
 app.run()
