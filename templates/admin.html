@@ -1,22 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Admin</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
 <div class="container">
 
-<h1>Painel ADMIN</h1>
+<h1>Painel Admin</h1>
+
+<h2>Faturamento total</h2>
+
+R$ {{total}}
 
 <h2>Motoristas</h2>
 
 <table>
 
+<tr>
+<th>ID</th>
+<th>Nome</th>
+<th>Veículo</th>
+<th>Status</th>
+</tr>
+
 {% for m in motoristas %}
 
 <tr>
-<td>{{ m[1] }}</td>
-<td>{{ m[3] }}</td>
 
-<td>
-<a href="/excluir_motorista/{{ m[0] }}">
-<button>Excluir</button>
-</a>
-</td>
+<td>{{m[0]}}</td>
+<td>{{m[1]}}</td>
+<td>{{m[3]}}</td>
+<td>{{m[8]}}</td>
 
 </tr>
 
@@ -24,44 +41,25 @@
 
 </table>
 
-<h2>Empresas</h2>
+<h2>Saques solicitados</h2>
 
 <table>
 
-{% for e in empresas %}
-
 <tr>
-<td>{{ e[1] }}</td>
-
-<td>
-<a href="/excluir_empresa/{{ e[0] }}">
-<button>Excluir</button>
-</a>
-</td>
-
+<th>ID</th>
+<th>Motorista</th>
+<th>Valor</th>
+<th>Status</th>
 </tr>
 
-{% endfor %}
-
-</table>
-
-<h2>Entregas</h2>
-
-<table>
-
-{% for e in entregas %}
+{% for s in saques %}
 
 <tr>
 
-<td>{{ e[1] }}</td>
-<td>{{ e[2] }}</td>
-<td>{{ e[5] }}</td>
-
-<td>
-<a href="/excluir_entrega/{{ e[0] }}">
-<button>Excluir</button>
-</a>
-</td>
+<td>{{s[0]}}</td>
+<td>{{s[1]}}</td>
+<td>{{s[2]}}</td>
+<td>{{s[3]}}</td>
 
 </tr>
 
@@ -70,3 +68,6 @@
 </table>
 
 </div>
+
+</body>
+</html>
