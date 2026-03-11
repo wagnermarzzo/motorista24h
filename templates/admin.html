@@ -1,0 +1,72 @@
+<div class="container">
+
+<h1>Painel ADMIN</h1>
+
+<h2>Motoristas</h2>
+
+<table>
+
+{% for m in motoristas %}
+
+<tr>
+<td>{{ m[1] }}</td>
+<td>{{ m[3] }}</td>
+
+<td>
+<a href="/excluir_motorista/{{ m[0] }}">
+<button>Excluir</button>
+</a>
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<h2>Empresas</h2>
+
+<table>
+
+{% for e in empresas %}
+
+<tr>
+<td>{{ e[1] }}</td>
+
+<td>
+<a href="/excluir_empresa/{{ e[0] }}">
+<button>Excluir</button>
+</a>
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<h2>Entregas</h2>
+
+<table>
+
+{% for e in entregas %}
+
+<tr>
+
+<td>{{ e[1] }}</td>
+<td>{{ e[2] }}</td>
+<td>{{ e[5] }}</td>
+
+<td>
+<a href="/excluir_entrega/{{ e[0] }}">
+<button>Excluir</button>
+</a>
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
