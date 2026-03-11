@@ -18,6 +18,17 @@ body:form
 
 document.getElementById("distancia").value=d.km
 
+var map=L.map('map').setView([d.lat1,d.lon1],11)
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
+
+var poly=L.polyline([
+[d.lat1,d.lon1],
+[d.lat2,d.lon2]
+]).addTo(map)
+
+map.fitBounds(poly.getBounds())
+
 })
 
 }
