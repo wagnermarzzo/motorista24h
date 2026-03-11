@@ -1,74 +1,151 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
+
 <head>
 
-<title>Empresa</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="stylesheet" href="/static/style.css">
+<title>Painel Empresa</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<style>
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+body{
+font-family:Arial;
+margin:0;
+background:#0f172a;
+color:white;
+}
 
-<script src="/static/script.js"></script>
+.topo{
+background:#020617;
+padding:15px;
+text-align:center;
+}
+
+.container{
+padding:20px;
+max-width:900px;
+margin:auto;
+}
+
+form{
+background:#1e293b;
+padding:20px;
+border-radius:8px;
+}
+
+input,select{
+
+width:100%;
+padding:10px;
+margin-top:10px;
+
+border:none;
+border-radius:6px;
+
+}
+
+button{
+
+margin-top:15px;
+padding:12px;
+width:100%;
+
+background:#2563eb;
+border:none;
+color:white;
+
+border-radius:6px;
+cursor:pointer;
+
+}
+
+.entrega{
+
+background:#1e293b;
+padding:15px;
+
+margin-top:15px;
+border-radius:8px;
+
+}
+
+.whatsapp{
+
+background:#22c55e;
+padding:10px;
+text-align:center;
+border-radius:6px;
+margin-top:10px;
+
+}
+
+.whatsapp a{
+
+color:white;
+text-decoration:none;
+font-weight:bold;
+
+}
+
+</style>
 
 </head>
 
 <body>
 
+<div class="topo">
+<h2>Painel da Empresa</h2>
+</div>
+
 <div class="container">
 
-<h2>Nova entrega</h2>
+<h3>Criar Entrega</h3>
 
-<form method="post">
+<form method="POST">
 
-<input id="coleta" name="coleta" placeholder="Endereço coleta">
+<input name="coleta" placeholder="Endereço de coleta" required>
 
-<input id="entrega" name="entrega" placeholder="Endereço entrega">
+<input name="entrega" placeholder="Endereço de entrega" required>
+
+<input name="distancia" placeholder="Distância KM" required>
 
 <select name="veiculo">
+
 <option value="moto">Moto</option>
 <option value="carro">Carro</option>
 <option value="van">Van</option>
+
 </select>
 
-<input id="distancia" name="distancia" placeholder="Distância">
-
-<button type="button" onclick="calcular()">Calcular distância</button>
-
-<button>Criar entrega</button>
+<button>Criar Entrega</button>
 
 </form>
 
-<div id="map" style="height:300px"></div>
-
-<h2>Entregas</h2>
-
-<table>
-
-<tr>
-<th>ID</th>
-<th>Coleta</th>
-<th>Entrega</th>
-<th>Valor</th>
-<th>Status</th>
-</tr>
+<h3>Entregas</h3>
 
 {% for e in entregas %}
 
-<tr>
+<div class="entrega">
 
-<td>{{e[0]}}</td>
-<td>{{e[1]}}</td>
-<td>{{e[2]}}</td>
-<td>{{e[5]}}</td>
-<td>{{e[6]}}</td>
+<p><b>Coleta:</b> {{e[1]}}</p>
+<p><b>Entrega:</b> {{e[2]}}</p>
+<p><b>Valor:</b> R$ {{e[5]}}</p>
+<p><b>Status:</b> {{e[6]}}</p>
 
-</tr>
+<div class="whatsapp">
+
+<a target="_blank"
+href="https://wa.me/?text=Nova%20entrega%20disponivel%0AColeta:%20{{e[1]}}%0AEntrega:%20{{e[2]}}%0AValor:%20R${{e[5]}}">
+Avisar Motoristas no WhatsApp
+</a>
+
+</div>
+
+</div>
 
 {% endfor %}
-
-</table>
 
 </div>
 
