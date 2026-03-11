@@ -7,7 +7,7 @@ margin:0;
 
 header{
 background:#020617;
-padding:30px;
+padding:25px;
 text-align:center;
 }
 
@@ -40,4 +40,5 @@ margin-top:20px;
 td,th{
 background:#1e293b;
 padding:10px;
+text-align:center;
 }
