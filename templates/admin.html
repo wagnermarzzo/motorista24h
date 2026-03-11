@@ -1,73 +1,42 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Admin</title>
-<link rel="stylesheet" href="/static/style.css">
+<title>ADM</title>
 </head>
 
 <body>
 
-<div class="container">
+<h2>Painel ADM</h2>
 
-<h1>Painel Admin</h1>
-
-<h2>Faturamento total</h2>
-
-R$ {{total}}
-
-<h2>Motoristas</h2>
-
-<table>
-
-<tr>
-<th>ID</th>
-<th>Nome</th>
-<th>Veículo</th>
-<th>Status</th>
-</tr>
+<h3>Motoristas</h3>
 
 {% for m in motoristas %}
 
-<tr>
+<p>
 
-<td>{{m[0]}}</td>
-<td>{{m[1]}}</td>
-<td>{{m[3]}}</td>
-<td>{{m[8]}}</td>
+{{m["nome"]}} |
+{{m["telefone"]}} |
+{{m["cidade"]}} |
+{{m["veiculo"]}} |
+{{m["status"]}}
 
-</tr>
-
-{% endfor %}
-
-</table>
-
-<h2>Saques solicitados</h2>
-
-<table>
-
-<tr>
-<th>ID</th>
-<th>Motorista</th>
-<th>Valor</th>
-<th>Status</th>
-</tr>
-
-{% for s in saques %}
-
-<tr>
-
-<td>{{s[0]}}</td>
-<td>{{s[1]}}</td>
-<td>{{s[2]}}</td>
-<td>{{s[3]}}</td>
-
-</tr>
+</p>
 
 {% endfor %}
 
-</table>
+<h3>Entregas</h3>
 
-</div>
+{% for e in entregas %}
+
+<p>
+
+Coleta: {{e["coleta"]}} |
+Entrega: {{e["entrega"]}} |
+Valor: {{e["valor"]}}
+
+</p>
+
+{% endfor %}
 
 </body>
 </html>
