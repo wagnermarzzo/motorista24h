@@ -1,26 +1,115 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
+
 <head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Motorista24H</title>
 
-<link rel="stylesheet" href="/static/style.css">
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+background:#0f172a;
+color:white;
+}
+
+.topo{
+background:#020617;
+padding:20px;
+text-align:center;
+}
+
+.topo h1{
+margin:0;
+font-size:28px;
+}
+
+.container{
+text-align:center;
+padding:40px;
+}
+
+.cards{
+display:flex;
+justify-content:center;
+gap:20px;
+flex-wrap:wrap;
+margin-top:30px;
+}
+
+.card{
+
+background:#1e293b;
+padding:20px;
+border-radius:10px;
+width:200px;
+
+}
+
+.card h2{
+margin:0;
+font-size:40px;
+color:#38bdf8;
+}
+
+.botao{
+
+display:inline-block;
+margin-top:30px;
+
+background:#2563eb;
+padding:12px 25px;
+border-radius:6px;
+
+color:white;
+text-decoration:none;
+
+}
+
+.botao:hover{
+background:#1e40af;
+}
+
+</style>
 
 </head>
 
 <body>
 
-<header>
-
+<div class="topo">
 <h1>Motorista24H</h1>
+</div>
 
-<p>Motoristas online no RJ</p>
+<div class="container">
 
-<p>Moto: {{moto}} | Carro: {{carro}} | Van: {{van}}</p>
+<h2>Rede de entregas 24 horas</h2>
 
-<a href="/login"><button>Entrar</button></a>
+<div class="cards">
 
-</header>
+<div class="card">
+<h2>{{moto}}</h2>
+<p>Motos</p>
+</div>
+
+<div class="card">
+<h2>{{carro}}</h2>
+<p>Carros</p>
+</div>
+
+<div class="card">
+<h2>{{van}}</h2>
+<p>Vans</p>
+</div>
+
+</div>
+
+<a class="botao" href="/login">Entrar no sistema</a>
+
+</div>
 
 </body>
-</html>
+  </html>
