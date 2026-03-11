@@ -1,29 +1,140 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-<title>Login</title>
-<link rel="stylesheet" href="/static/style.css">
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Login Motorista24H</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial;
+}
+
+body{
+
+height:100vh;
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+background-image:url("https://images.unsplash.com/photo-1601582589907-f92af5ed9db8");
+background-size:cover;
+background-position:center;
+
+}
+
+.overlay{
+
+position:absolute;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.6);
+
+}
+
+.box{
+
+position:relative;
+z-index:2;
+
+background:white;
+padding:40px;
+
+border-radius:10px;
+
+width:320px;
+text-align:center;
+
+box-shadow:0 10px 30px rgba(0,0,0,0.4);
+
+}
+
+.box h1{
+margin-bottom:20px;
+color:#020617;
+}
+
+.box input{
+
+width:100%;
+padding:12px;
+
+margin-top:10px;
+
+border:1px solid #ccc;
+border-radius:6px;
+
+}
+
+.box button{
+
+width:100%;
+padding:12px;
+
+margin-top:20px;
+
+border:none;
+border-radius:6px;
+
+background:#2563eb;
+color:white;
+
+font-size:16px;
+cursor:pointer;
+
+}
+
+.box button:hover{
+background:#1e40af;
+}
+
+.links{
+margin-top:15px;
+font-size:14px;
+}
+
+.links a{
+display:block;
+margin-top:5px;
+color:#2563eb;
+text-decoration:none;
+}
+
+</style>
+
 </head>
 
 <body>
 
-<div class="container">
+<div class="overlay"></div>
 
-<h2>Login</h2>
+<div class="box">
 
-<form method="post">
+<h1>Motorista24H</h1>
 
-<input name="usuario" placeholder="Telefone ou usuário">
+<form method="POST">
 
-<input name="senha" placeholder="Senha">
+<input type="text" name="usuario" placeholder="Telefone ou usuário" required>
 
-<button>Entrar</button>
+<input type="password" name="senha" placeholder="Senha" required>
+
+<button type="submit">Entrar</button>
 
 </form>
 
+<div class="links">
+
 <a href="/cadastro_motorista">Cadastrar Motorista</a>
-<br>
 <a href="/cadastro_empresa">Cadastrar Empresa</a>
+
+</div>
 
 </div>
 
