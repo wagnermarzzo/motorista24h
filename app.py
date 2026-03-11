@@ -8,6 +8,9 @@ app.secret_key = "motorista24h"
 UPLOAD_FOLDER = "static/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+ADMIN_USER = "Troia"
+ADMIN_PASS = "88691553"
+
 def db():
     return sqlite3.connect("database.db")
 
@@ -52,17 +55,20 @@ def criar_db():
 
 criar_db()
 
+# HOME
+
 @app.route("/")
 def index():
 
     conn = db()
-    c = conn.cursor()
 
-    moto = c.execute("SELECT count(*) FROM motoristas WHERE veiculo='moto'").fetchone()[0]
-    carro = c.execute("SELECT count(*) FROM motoristas WHERE veiculo='carro'").fetchone()[0]
-    van = c.execute("SELECT count(*) FROM motoristas WHERE veiculo='van'").fetchone()[0]
+    moto = conn.execute("SELECT count(*) FROM motoristas WHERE veiculo='moto'").fetchone()[0]
+    carro = conn.execute("SELECT count(*) FROM motoristas WHERE veiculo='carro'").fetchone()[0]
+    van = conn.execute("SELECT count(*) FROM motoristas WHERE veiculo='van'").fetchone()[0]
 
     return render_template("index.html", moto=moto, carro=carro, van=van)
+
+# CADASTRO MOTORISTA
 
 @app.route("/cadastro_motorista", methods=["GET","POST"])
 def cadastro_motorista():
@@ -83,6 +89,8 @@ def cadastro_motorista():
 
     return render_template("cadastro_motorista.html")
 
+# CADASTRO EMPRESA
+
 @app.route("/cadastro_empresa", methods=["GET","POST"])
 def cadastro_empresa():
 
@@ -101,33 +109,38 @@ def cadastro_empresa():
 
     return render_template("cadastro_empresa.html")
 
+# LOGIN
+
 @app.route("/login", methods=["GET","POST"])
 def login():
 
     if request.method == "POST":
 
-        telefone = request.form["telefone"]
+        usuario = request.form["usuario"]
+        senha = request.form["senha"]
+
+        if usuario == ADMIN_USER and senha == ADMIN_PASS:
+            session["admin"]=True
+            return redirect("/admin")
 
         conn = db()
 
-        motorista = conn.execute("SELECT * FROM motoristas WHERE telefone=?",(telefone,)).fetchone()
-        empresa = conn.execute("SELECT * FROM empresas WHERE telefone=?",(telefone,)).fetchone()
+        motorista = conn.execute("SELECT * FROM motoristas WHERE telefone=?",(usuario,)).fetchone()
+        empresa = conn.execute("SELECT * FROM empresas WHERE telefone=?",(usuario,)).fetchone()
 
         if motorista:
-
             session["tipo"]="motorista"
             session["id"]=motorista[0]
-
             return redirect("/motorista")
 
         if empresa:
-
             session["tipo"]="empresa"
             session["id"]=empresa[0]
-
             return redirect("/empresa")
 
     return render_template("login.html")
+
+# DASHBOARD EMPRESA
 
 @app.route("/empresa", methods=["GET","POST"])
 def empresa():
@@ -146,7 +159,6 @@ def empresa():
         }
 
         base,km = tabela[veiculo]
-
         valor = base + distancia*km
 
         conn = db()
@@ -161,6 +173,8 @@ def empresa():
     entregas = conn.execute("SELECT * FROM entregas").fetchall()
 
     return render_template("dashboard_empresa.html",entregas=entregas)
+
+# DASHBOARD MOTORISTA
 
 @app.route("/motorista", methods=["GET","POST"])
 def motorista():
@@ -181,5 +195,53 @@ def motorista():
     entregas = conn.execute("SELECT * FROM entregas").fetchall()
 
     return render_template("dashboard_motorista.html",entregas=entregas)
+
+# ADMIN
+
+@app.route("/admin")
+def admin():
+
+    if "admin" not in session:
+        return redirect("/login")
+
+    conn = db()
+
+    motoristas = conn.execute("SELECT * FROM motoristas").fetchall()
+    empresas = conn.execute("SELECT * FROM empresas").fetchall()
+    entregas = conn.execute("SELECT * FROM entregas").fetchall()
+
+    return render_template("admin.html",
+        motoristas=motoristas,
+        empresas=empresas,
+        entregas=entregas)
+
+# EXCLUIR
+
+@app.route("/excluir_motorista/<id>")
+def excluir_motorista(id):
+
+    conn = db()
+    conn.execute("DELETE FROM motoristas WHERE id=?",(id,))
+    conn.commit()
+
+    return redirect("/admin")
+
+@app.route("/excluir_empresa/<id>")
+def excluir_empresa(id):
+
+    conn = db()
+    conn.execute("DELETE FROM empresas WHERE id=?",(id,))
+    conn.commit()
+
+    return redirect("/admin")
+
+@app.route("/excluir_entrega/<id>")
+def excluir_entrega(id):
+
+    conn = db()
+    conn.execute("DELETE FROM entregas WHERE id=?",(id,))
+    conn.commit()
+
+    return redirect("/admin")
 
 app.run()
