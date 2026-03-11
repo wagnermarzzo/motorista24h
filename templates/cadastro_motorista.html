@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Painel Motorista</title>
+<title>Cadastro Motorista</title>
 
 <style>
 
@@ -15,47 +14,52 @@ font-family:Arial;
 margin:0;
 background:#0f172a;
 color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
 }
 
-.topo{
-background:#020617;
-padding:15px;
-text-align:center;
-}
-
-.container{
-padding:20px;
-max-width:900px;
-margin:auto;
-}
-
-.entrega{
+.box{
 
 background:#1e293b;
-padding:15px;
-margin-top:15px;
+padding:30px;
+border-radius:10px;
+width:320px;
 
-border-radius:8px;
+}
+
+h2{
+text-align:center;
+margin-bottom:20px;
+}
+
+input,select{
+
+width:100%;
+padding:10px;
+margin-top:10px;
+border:none;
+border-radius:6px;
 
 }
 
 button{
 
-margin-top:10px;
-padding:10px;
-
+width:100%;
+margin-top:15px;
+padding:12px;
 background:#22c55e;
 border:none;
-
-color:white;
-
 border-radius:6px;
+color:white;
+font-size:16px;
 cursor:pointer;
 
 }
 
-input{
-margin-top:10px;
+button:hover{
+background:#16a34a;
 }
 
 </style>
@@ -64,54 +68,30 @@ margin-top:10px;
 
 <body>
 
-<div class="topo">
-<h2>Painel do Motorista</h2>
-</div>
+<div class="box">
 
-<div class="container">
+<h2>Cadastro de Motorista</h2>
 
-<h3>Saldo: R$ {{saldo}}</h3>
+<form method="POST" action="/cadastro_motorista">
 
-<form action="/status_motorista" method="POST">
+<input type="text" name="nome" placeholder="Nome completo" required>
 
-<select name="status">
+<input type="text" name="telefone" placeholder="Telefone / WhatsApp" required>
 
-<option value="online">Online</option>
-<option value="offline">Offline</option>
+<input type="text" name="cidade" placeholder="Cidade" required>
+
+<select name="veiculo" required>
+
+<option value="">Tipo de veículo</option>
+<option value="moto">Moto</option>
+<option value="carro">Carro</option>
+<option value="van">Van</option>
 
 </select>
 
-<button>Atualizar Status</button>
+<button type="submit">Cadastrar</button>
 
 </form>
-
-<h3>Entregas disponíveis</h3>
-
-{% for e in entregas %}
-
-{% if e[6] != "entregue" %}
-
-<div class="entrega">
-
-<p><b>Coleta:</b> {{e[1]}}</p>
-<p><b>Entrega:</b> {{e[2]}}</p>
-<p><b>Valor:</b> R$ {{e[5]}}</p>
-
-<form method="POST" enctype="multipart/form-data">
-
-<input type="hidden" name="id" value="{{e[0]}}">
-
-<input type="file" name="foto" required>
-
-<button>Finalizar Entrega</button>
-
-</form>
-
-</div>
-
-{% endif %}
-
-{% endfor %}
 
 </div>
 
