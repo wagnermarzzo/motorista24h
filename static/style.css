@@ -1,67 +1,35 @@
 body{
 
 font-family:Arial;
-margin:0;
 background:#0f172a;
 color:white;
+margin:0;
 
 }
 
 header{
 
-text-align:center;
-padding:40px;
 background:#020617;
-
-}
-
-.online{
-
 padding:30px;
 text-align:center;
 
 }
 
-.grid{
+.container{
 
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-gap:20px;
-
-}
-
-.card{
-
-background:#1e293b;
 padding:20px;
-border-radius:10px;
-font-size:18px;
-
-}
-
-.pedido{
-
-padding:30px;
-text-align:center;
-
-}
-
-form{
-
-display:flex;
-flex-direction:column;
-gap:10px;
-max-width:400px;
+max-width:900px;
 margin:auto;
 
 }
 
 input,select,button{
 
+width:100%;
 padding:12px;
-border-radius:8px;
+margin:8px 0;
+border-radius:6px;
 border:none;
-font-size:16px;
 
 }
 
@@ -69,20 +37,20 @@ button{
 
 background:#22c55e;
 color:white;
-cursor:pointer;
+font-size:16px;
 
 }
 
-button:hover{
+table{
 
-background:#16a34a;
+width:100%;
+margin-top:20px;
 
 }
 
-@media (min-width:800px){
+td{
 
-header{
-padding:60px;
+padding:10px;
+background:#1e293b;
+
 }
-
-  }
