@@ -1,31 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Motorista24H</title>
+
+<link rel="stylesheet" href="/static/style.css">
+
+</head>
+
+<body>
+
 <header>
 
 <h1>Motorista24H</h1>
 
-<p>Motoristas disponíveis 24h</p>
+<p>Motoristas online no RJ</p>
+
+<p>Moto: {{moto}} | Carro: {{carro}} | Van: {{van}}</p>
+
+<a href="/login"><button>Entrar</button></a>
 
 </header>
 
-<div class="container">
-
-<h2>Motoristas online</h2>
-
-Moto: {{ moto }} <br>
-Carro: {{ carro }} <br>
-Van: {{ van }}
-
-<br><br>
-
-<a href="/cadastro_motorista">
-<button>Cadastrar Motorista</button>
-</a>
-
-<a href="/cadastro_empresa">
-<button>Cadastrar Empresa</button>
-</a>
-
-<a href="/login">
-<button>Entrar</button>
-</a>
-
-</div>
+</body>
+</html>
