@@ -10,9 +10,11 @@ app.secret_key = "motorista24h"
 ADMIN_USER = "Troia"
 ADMIN_PASS = "88691553"
 
+EMPRESA_TESTE_USER = "Wagner"
+EMPRESA_TESTE_PASS = "88691553"
+
 UPLOAD = "static/uploads"
 
-# garante que uploads seja pasta
 if os.path.exists(UPLOAD) and not os.path.isdir(UPLOAD):
     os.remove(UPLOAD)
 
@@ -81,34 +83,6 @@ def init_db():
 init_db()
 
 
-def distancia(lat1, lon1, lat2, lon2):
-    return math.sqrt((lat1-lat2)**2 + (lon1-lon2)**2)
-
-
-def motorista_proximo(lat, lon):
-
-    conn = db()
-
-    motoristas = conn.execute(
-        "SELECT * FROM motoristas WHERE status='online'"
-    ).fetchall()
-
-    melhor = None
-    menor = 999999
-
-    for m in motoristas:
-
-        if m[5] and m[6]:
-
-            d = distancia(lat, lon, m[5], m[6])
-
-            if d < menor:
-                menor = d
-                melhor = m
-
-    return melhor
-
-
 @app.route("/")
 def index():
 
@@ -121,7 +95,7 @@ def index():
     return render_template("index.html", moto=moto, carro=carro, van=van)
 
 
-@app.route("/login", methods=["GET", "POST"])
+@app.route("/login", methods=["GET","POST"])
 def login():
 
     if request.method == "POST":
@@ -132,6 +106,10 @@ def login():
         if usuario == ADMIN_USER and senha == ADMIN_PASS:
             session["admin"] = True
             return redirect("/admin")
+
+        if usuario == EMPRESA_TESTE_USER and senha == EMPRESA_TESTE_PASS:
+            session["empresa"] = 999
+            return redirect("/empresa")
 
         conn = db()
 
@@ -156,95 +134,7 @@ def login():
     return render_template("login.html")
 
 
-@app.route("/cadastro_motorista", methods=["GET", "POST"])
-def cadastro_motorista():
-
-    if request.method == "POST":
-
-        nome = request.form["nome"]
-        cidade = request.form["cidade"]
-        veiculo = request.form["veiculo"]
-        telefone = request.form["telefone"]
-
-        conn = db()
-
-        conn.execute("""
-        INSERT INTO motoristas(nome,cidade,veiculo,telefone)
-        VALUES(?,?,?,?)
-        """, (nome, cidade, veiculo, telefone))
-
-        conn.commit()
-
-        return redirect("/login")
-
-    return render_template("cadastro_motorista.html")
-
-
-@app.route("/cadastro_empresa", methods=["GET", "POST"])
-def cadastro_empresa():
-
-    if request.method == "POST":
-
-        nome = request.form["nome"]
-        cidade = request.form["cidade"]
-        telefone = request.form["telefone"]
-
-        conn = db()
-
-        conn.execute("""
-        INSERT INTO empresas(nome,cidade,telefone)
-        VALUES(?,?,?)
-        """, (nome, cidade, telefone))
-
-        conn.commit()
-
-        return redirect("/login")
-
-    return render_template("cadastro_empresa.html")
-
-
-@app.route("/calcular_distancia", methods=["POST"])
-def calcular_distancia():
-
-    try:
-
-        coleta = request.form["coleta"]
-        entrega = request.form["entrega"]
-
-        headers = {"User-Agent": "Motorista24H"}
-
-        r1 = requests.get(
-            f"https://nominatim.openstreetmap.org/search?q={coleta}&format=json",
-            headers=headers,
-            timeout=5
-        ).json()
-
-        r2 = requests.get(
-            f"https://nominatim.openstreetmap.org/search?q={entrega}&format=json",
-            headers=headers,
-            timeout=5
-        ).json()
-
-        lat1 = float(r1[0]["lat"])
-        lon1 = float(r1[0]["lon"])
-        lat2 = float(r2[0]["lat"])
-        lon2 = float(r2[0]["lon"])
-
-        km = ((lat1-lat2)**2 + (lon1-lon2)**2)**0.5 * 111
-
-        return jsonify({
-            "km": round(km, 2),
-            "lat1": lat1,
-            "lon1": lon1,
-            "lat2": lat2,
-            "lon2": lon2
-        })
-
-    except:
-        return jsonify({"erro": "Falha ao calcular distância"})
-
-
-@app.route("/empresa", methods=["GET", "POST"])
+@app.route("/empresa", methods=["GET","POST"])
 def empresa():
 
     if request.method == "POST":
@@ -255,12 +145,13 @@ def empresa():
         veiculo = request.form["veiculo"]
 
         tabela = {
-            "moto": (10, 1.5),
-            "carro": (15, 2),
-            "van": (20, 2.8)
+            "moto": (10,1.5),
+            "carro": (15,2),
+            "van": (20,2.8)
         }
 
         base, km = tabela[veiculo]
+
         valor = base + distancia * km
 
         conn = db()
@@ -268,7 +159,7 @@ def empresa():
         conn.execute("""
         INSERT INTO entregas(coleta,entrega,distancia,veiculo,valor,status)
         VALUES(?,?,?,?,?,?)
-        """, (coleta, entrega, distancia, veiculo, valor, "aguardando"))
+        """,(coleta,entrega,distancia,veiculo,valor,"aguardando"))
 
         conn.commit()
 
@@ -278,10 +169,10 @@ def empresa():
     SELECT * FROM entregas ORDER BY id DESC LIMIT 50
     """).fetchall()
 
-    return render_template("dashboard_empresa.html", entregas=entregas)
+    return render_template("dashboard_empresa.html",entregas=entregas)
 
 
-@app.route("/motorista", methods=["GET", "POST"])
+@app.route("/motorista", methods=["GET","POST"])
 def motorista():
 
     if request.method == "POST":
@@ -289,7 +180,8 @@ def motorista():
         entrega_id = request.form["id"]
         foto = request.files["foto"]
 
-        path = os.path.join(UPLOAD, foto.filename)
+        path = os.path.join(UPLOAD,foto.filename)
+
         foto.save(path)
 
         conn = db()
@@ -298,7 +190,7 @@ def motorista():
         UPDATE entregas
         SET foto=?,status='entregue'
         WHERE id=?
-        """, (path, entrega_id))
+        """,(path,entrega_id))
 
         conn.commit()
 
@@ -310,46 +202,9 @@ def motorista():
 
     saldo = conn.execute("""
     SELECT saldo FROM motoristas WHERE id=?
-    """, (session["motorista"],)).fetchone()[0]
+    """,(session["motorista"],)).fetchone()[0]
 
-    return render_template(
-        "dashboard_motorista.html",
-        entregas=entregas,
-        saldo=saldo
-    )
-
-
-@app.route("/status_motorista", methods=["POST"])
-def status_motorista():
-
-    status = request.form["status"]
-
-    conn = db()
-
-    conn.execute("""
-    UPDATE motoristas SET status=? WHERE id=?
-    """, (status, session["motorista"]))
-
-    conn.commit()
-
-    return redirect("/motorista")
-
-
-@app.route("/solicitar_saque", methods=["POST"])
-def solicitar_saque():
-
-    valor = request.form["valor"]
-
-    conn = db()
-
-    conn.execute("""
-    INSERT INTO saques(motorista,valor,status)
-    VALUES(?,?,?)
-    """, (session["motorista"], valor, "pendente"))
-
-    conn.commit()
-
-    return redirect("/motorista")
+    return render_template("dashboard_motorista.html",entregas=entregas,saldo=saldo)
 
 
 @app.route("/admin")
@@ -369,15 +224,12 @@ def admin():
     SELECT SUM(valor) FROM entregas WHERE status='entregue'
     """).fetchone()[0] or 0
 
-    return render_template(
-        "admin.html",
+    return render_template("admin.html",
         motoristas=motoristas,
         empresas=empresas,
         entregas=entregas,
         saques=saques,
-        total=total
-    )
-
+        total=total)
 
 if __name__ == "__main__":
     app.run(debug=True)
