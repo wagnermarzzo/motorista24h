@@ -1,16 +1,18 @@
 from flask import Flask, render_template, request, redirect, session, jsonify
 import sqlite3
 import os
+import math
 import requests
+import urllib.parse
 
 app = Flask(__name__)
 app.secret_key="motorista24h"
 
-UPLOAD="static/uploads"
-os.makedirs(UPLOAD, exist_ok=True)
-
 ADMIN_USER="Troia"
 ADMIN_PASS="88691553"
+
+UPLOAD="static/uploads"
+os.makedirs(UPLOAD, exist_ok=True)
 
 def db():
     return sqlite3.connect("database.db")
@@ -26,7 +28,10 @@ def init_db():
     nome TEXT,
     cidade TEXT,
     veiculo TEXT,
-    telefone TEXT
+    telefone TEXT,
+    lat REAL,
+    lon REAL,
+    saldo REAL DEFAULT 0
     )
     """)
 
@@ -48,13 +53,38 @@ def init_db():
     veiculo TEXT,
     valor REAL,
     status TEXT,
-    foto TEXT
+    foto TEXT,
+    motorista INTEGER
     )
     """)
 
     conn.commit()
 
 init_db()
+
+def distancia(lat1,lon1,lat2,lon2):
+
+    return math.sqrt((lat1-lat2)**2+(lon1-lon2)**2)
+
+def motorista_proximo(lat,lon):
+
+    conn=db()
+    motoristas=conn.execute("SELECT * FROM motoristas").fetchall()
+
+    melhor=None
+    menor=999999
+
+    for m in motoristas:
+
+        if m[5] and m[6]:
+
+            d=distancia(lat,lon,m[5],m[6])
+
+            if d<menor:
+                menor=d
+                melhor=m
+
+    return melhor
 
 @app.route("/")
 def index():
@@ -72,17 +102,17 @@ def login():
 
     if request.method=="POST":
 
-        user=request.form["usuario"]
+        usuario=request.form["usuario"]
         senha=request.form["senha"]
 
-        if user==ADMIN_USER and senha==ADMIN_PASS:
+        if usuario==ADMIN_USER and senha==ADMIN_PASS:
             session["admin"]=True
             return redirect("/admin")
 
         conn=db()
 
-        motorista=conn.execute("SELECT * FROM motoristas WHERE telefone=?",(user,)).fetchone()
-        empresa=conn.execute("SELECT * FROM empresas WHERE telefone=?",(user,)).fetchone()
+        motorista=conn.execute("SELECT * FROM motoristas WHERE telefone=?",(usuario,)).fetchone()
+        empresa=conn.execute("SELECT * FROM empresas WHERE telefone=?",(usuario,)).fetchone()
 
         if motorista:
             session["motorista"]=motorista[0]
@@ -105,8 +135,12 @@ def cadastro_motorista():
         telefone=request.form["telefone"]
 
         conn=db()
-        conn.execute("INSERT INTO motoristas(nome,cidade,veiculo,telefone) VALUES(?,?,?,?)",
-        (nome,cidade,veiculo,telefone))
+
+        conn.execute("""
+        INSERT INTO motoristas(nome,cidade,veiculo,telefone)
+        VALUES(?,?,?,?)
+        """,(nome,cidade,veiculo,telefone))
+
         conn.commit()
 
         return redirect("/login")
@@ -123,8 +157,12 @@ def cadastro_empresa():
         telefone=request.form["telefone"]
 
         conn=db()
-        conn.execute("INSERT INTO empresas(nome,cidade,telefone) VALUES(?,?,?)",
-        (nome,cidade,telefone))
+
+        conn.execute("""
+        INSERT INTO empresas(nome,cidade,telefone)
+        VALUES(?,?,?)
+        """,(nome,cidade,telefone))
+
         conn.commit()
 
         return redirect("/login")
@@ -137,23 +175,17 @@ def calcular_distancia():
     coleta=request.form["coleta"]
     entrega=request.form["entrega"]
 
-    url=f"https://nominatim.openstreetmap.org/search?q={coleta}&format=json"
-    r1=requests.get(url).json()
-
-    url=f"https://nominatim.openstreetmap.org/search?q={entrega}&format=json"
-    r2=requests.get(url).json()
-
-    if not r1 or not r2:
-        return jsonify({"erro":"endereço não encontrado"})
+    r1=requests.get(f"https://nominatim.openstreetmap.org/search?q={coleta}&format=json").json()
+    r2=requests.get(f"https://nominatim.openstreetmap.org/search?q={entrega}&format=json").json()
 
     lat1=float(r1[0]["lat"])
     lon1=float(r1[0]["lon"])
     lat2=float(r2[0]["lat"])
     lon2=float(r2[0]["lon"])
 
-    distancia=((lat1-lat2)**2+(lon1-lon2)**2)**0.5*111
+    km=((lat1-lat2)**2+(lon1-lon2)**2)**0.5*111
 
-    return jsonify({"km":round(distancia,2)})
+    return jsonify({"km":round(km,2),"lat1":lat1,"lon1":lon1,"lat2":lat2,"lon2":lon2})
 
 @app.route("/empresa",methods=["GET","POST"])
 def empresa():
@@ -175,6 +207,7 @@ def empresa():
         valor=base+distancia*km
 
         conn=db()
+
         conn.execute("""
         INSERT INTO entregas(coleta,entrega,distancia,veiculo,valor,status)
         VALUES(?,?,?,?,?,?)
@@ -192,20 +225,32 @@ def motorista():
 
     if request.method=="POST":
 
-        id=request.form["id"]
+        entrega_id=request.form["id"]
         foto=request.files["foto"]
 
         path=os.path.join(UPLOAD,foto.filename)
         foto.save(path)
 
         conn=db()
-        conn.execute("UPDATE entregas SET foto=?,status='entregue' WHERE id=?",(path,id))
+
+        conn.execute("""
+        UPDATE entregas
+        SET foto=?,status='entregue'
+        WHERE id=?
+        """,(path,entrega_id))
+
         conn.commit()
 
     conn=db()
+
     entregas=conn.execute("SELECT * FROM entregas").fetchall()
 
-    return render_template("dashboard_motorista.html",entregas=entregas)
+    saldo=conn.execute("""
+    SELECT saldo FROM motoristas
+    WHERE id=?
+    """,(session["motorista"],)).fetchone()[0]
+
+    return render_template("dashboard_motorista.html",entregas=entregas,saldo=saldo)
 
 @app.route("/admin")
 def admin():
@@ -220,8 +265,8 @@ def admin():
     entregas=conn.execute("SELECT * FROM entregas").fetchall()
 
     return render_template("admin.html",
-    motoristas=motoristas,
-    empresas=empresas,
-    entregas=entregas)
+        motoristas=motoristas,
+        empresas=empresas,
+        entregas=entregas)
 
 app.run()
