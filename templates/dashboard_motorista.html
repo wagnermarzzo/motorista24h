@@ -1,88 +1,47 @@
 <!DOCTYPE html>
 <html>
 <head>
+
+<meta charset="UTF-8">
 <title>Painel Motorista</title>
-<link rel="stylesheet" href="/static/style.css">
+
+<link rel="stylesheet" href="/static/css/style.css">
+
 </head>
 
 <body>
 
-<div class="container">
+<header>
 
 <h2>Painel do Motorista</h2>
 
-<h3>Saldo disponível</h3>
+<button onclick="toggleStatus()">Online / Offline</button>
 
-R$ {{saldo}}
+</header>
 
-<h3>Status</h3>
+<div class="container">
 
-<form method="post" action="/status_motorista">
+<h3>Entrega Atual</h3>
 
-<select name="status">
+<div id="entrega">
 
-<option value="online">Online</option>
-<option value="ocupado">Ocupado</option>
-<option value="offline">Offline</option>
-
-</select>
-
-<button>Atualizar</button>
-
-</form>
-
-<h3>Solicitar saque PIX</h3>
-
-<form method="post" action="/solicitar_saque">
-
-<input name="valor" placeholder="Valor">
-
-<button>Solicitar saque</button>
-
-</form>
-
-<h2>Entregas</h2>
-
-<table>
-
-<tr>
-<th>ID</th>
-<th>Coleta</th>
-<th>Entrega</th>
-<th>Status</th>
-<th>Foto</th>
-</tr>
-
-{% for e in entregas %}
-
-<tr>
-
-<td>{{e[0]}}</td>
-<td>{{e[1]}}</td>
-<td>{{e[2]}}</td>
-<td>{{e[6]}}</td>
-
-<td>
-
-<form method="post" enctype="multipart/form-data">
-
-<input type="hidden" name="id" value="{{e[0]}}">
-
-<input type="file" name="foto">
-
-<button>Enviar</button>
-
-</form>
-
-</td>
-
-</tr>
-
-{% endfor %}
-
-</table>
+Nenhuma entrega no momento
 
 </div>
 
+<div id="mapa"></div>
+
+</div>
+
+<script>
+
+function toggleStatus(){
+
+alert("Status alterado")
+
+}
+
+</script>
+
 </body>
-  </html>
+</html>
