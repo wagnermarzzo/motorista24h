@@ -1,10 +1,14 @@
 from flask import Flask, render_template, request, redirect, session
 import sqlite3
+import requests
 
 app = Flask(__name__)
 app.secret_key = "motorista24h"
 
+GOOGLE_API_KEY = "AIzaSyBnpIgc5k0bckNxjW4y4mDM4W-C9VRP8EQ"
+
 DATABASE = "database.db"
+
 
 def db():
     conn = sqlite3.connect(DATABASE)
@@ -13,185 +17,137 @@ def db():
 
 
 def criar_tabelas():
-
     conn = db()
 
     conn.execute("""
-    CREATE TABLE IF NOT EXISTS motoristas(
+    CREATE TABLE IF NOT EXISTS empresas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nome TEXT,
-        telefone TEXT,
-        cidade TEXT,
-        veiculo TEXT,
-        status TEXT DEFAULT 'offline'
+        email TEXT,
+        senha TEXT
     )
     """)
 
     conn.execute("""
-    CREATE TABLE IF NOT EXISTS entregas(
+    CREATE TABLE IF NOT EXISTS motoristas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT,
+        email TEXT,
+        senha TEXT,
+        veiculo TEXT,
+        latitude REAL,
+        longitude REAL,
+        status TEXT
+    )
+    """)
+
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS entregas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        empresa_id INTEGER,
+        motorista_id INTEGER,
         coleta TEXT,
-        entrega TEXT,
+        destino TEXT,
+        distancia REAL,
         valor REAL,
-        status TEXT DEFAULT 'disponivel'
+        status TEXT
     )
     """)
 
     conn.commit()
+    conn.close()
 
-criar_tabelas()
-
-# LOGIN TESTE
-EMPRESA_USER = "Wagner"
-EMPRESA_PASS = "88691553"
-
-ADMIN_USER = "Troia"
-ADMIN_PASS = "88691553"
 
 @app.route("/")
-def index():
-    return render_template("login.html")
+def home():
+    return render_template("login_empresa.html")
 
-@app.route("/login", methods=["POST"])
-def login():
 
-    usuario = request.form["usuario"]
+@app.route("/login_empresa", methods=["POST"])
+def login_empresa():
+
+    email = request.form["email"]
     senha = request.form["senha"]
 
-    if usuario == EMPRESA_USER and senha == EMPRESA_PASS:
-        session["empresa"] = True
-        return redirect("/empresa")
-
-    if usuario == ADMIN_USER and senha == ADMIN_PASS:
-        session["admin"] = True
-        return redirect("/admin")
-
     conn = db()
 
-    motorista = conn.execute(
-        "SELECT * FROM motoristas WHERE telefone=?",
-        (usuario,)
+    empresa = conn.execute(
+        "SELECT * FROM empresas WHERE email=? AND senha=?",
+        (email, senha)
     ).fetchone()
 
-    if motorista:
-        session["motorista"] = motorista["id"]
-        return redirect("/motorista")
+    if empresa:
+        session["empresa_id"] = empresa["id"]
+        return redirect("/dashboard_empresa")
 
-    return redirect("/")
-
-
-@app.route("/cadastro_motorista", methods=["GET","POST"])
-def cadastro_motorista():
-
-    if request.method == "POST":
-
-        nome = request.form["nome"]
-        telefone = request.form["telefone"]
-        cidade = request.form["cidade"]
-        veiculo = request.form["veiculo"]
-
-        conn = db()
-
-        conn.execute(
-        "INSERT INTO motoristas (nome, telefone, cidade, veiculo) VALUES (?, ?, ?, ?)",
-        (nome, telefone, cidade, veiculo)
-        )
-
-        conn.commit()
-
-        return redirect("/")
-
-    return render_template("cadastro_motorista.html")
+    return "Login inválido"
 
 
-@app.route("/motorista")
-def motorista():
-
-    if "motorista" not in session:
-        return redirect("/")
+@app.route("/dashboard_empresa")
+def dashboard_empresa():
 
     conn = db()
 
     entregas = conn.execute(
-        "SELECT * FROM entregas WHERE status='disponivel'"
+        "SELECT * FROM entregas WHERE empresa_id=?",
+        (session["empresa_id"],)
     ).fetchall()
 
-    return render_template("motorista.html", entregas=entregas)
+    return render_template("dashboard_empresa.html", entregas=entregas)
 
 
-@app.route("/status_motorista", methods=["POST"])
-def status_motorista():
-
-    status = request.form["status"]
-
-    conn = db()
-
-    conn.execute(
-    "UPDATE motoristas SET status=? WHERE id=?",
-    (status, session["motorista"])
-    )
-
-    conn.commit()
-
-    return redirect("/motorista")
-
-
-@app.route("/empresa")
-def empresa():
-
-    if "empresa" not in session:
-        return redirect("/")
-
-    conn = db()
-
-    entregas = conn.execute(
-        "SELECT * FROM entregas"
-    ).fetchall()
-
-    return render_template("empresa.html", entregas=entregas)
-
-
-@app.route("/criar_entrega", methods=["POST"])
+@app.route("/criar_entrega")
 def criar_entrega():
+    return render_template("criar_entrega.html")
+
+
+def calcular_distancia(origem, destino):
+
+    url = f"https://maps.googleapis.com/maps/api/distancematrix/json?origins={origem}&destinations={destino}&key={GOOGLE_API_KEY}"
+
+    r = requests.get(url).json()
+
+    metros = r["rows"][0]["elements"][0]["distance"]["value"]
+
+    km = metros / 1000
+
+    return km
+
+
+def calcular_valor(km, veiculo):
+
+    taxa = {
+        "moto": 10,
+        "carro": 12,
+        "van": 15
+    }
+
+    return taxa[veiculo] + (km * 1.5)
+
+
+@app.route("/salvar_entrega", methods=["POST"])
+def salvar_entrega():
 
     coleta = request.form["coleta"]
-    entrega = request.form["entrega"]
-    valor = request.form["valor"]
+    destino = request.form["destino"]
+    veiculo = request.form["veiculo"]
+
+    km = calcular_distancia(coleta, destino)
+
+    valor = calcular_valor(km, veiculo)
 
     conn = db()
 
     conn.execute(
-    "INSERT INTO entregas (coleta, entrega, valor) VALUES (?, ?, ?)",
-    (coleta, entrega, valor)
+        "INSERT INTO entregas (empresa_id, coleta, destino, distancia, valor, status) VALUES (?,?,?,?,?,?)",
+        (session["empresa_id"], coleta, destino, km, valor, "procurando_motorista")
     )
 
     conn.commit()
 
-    return redirect("/empresa")
-
-
-@app.route("/admin")
-def admin():
-
-    if "admin" not in session:
-        return redirect("/")
-
-    conn = db()
-
-    motoristas = conn.execute(
-        "SELECT * FROM motoristas"
-    ).fetchall()
-
-    entregas = conn.execute(
-        "SELECT * FROM entregas"
-    ).fetchall()
-
-    return render_template(
-        "admin.html",
-        motoristas=motoristas,
-        entregas=entregas
-    )
+    return redirect("/dashboard_empresa")
 
 
 if __name__ == "__main__":
+    criar_tabelas()
     app.run()
