@@ -5,7 +5,8 @@ import requests
 app = Flask(__name__)
 app.secret_key = "motorista24h"
 
-GOOGLE_API_KEY = "COLE_SUA_API_AQUI"
+# COLOQUE SUA CHAVE DO GOOGLE MAPS
+GOOGLE_API_KEY = "AIzaSyBnpIgc5k0bckNxjW4y4mDM4W-C9VRP8EQ"
 
 DATABASE = "database.db"
 
@@ -66,7 +67,7 @@ def criar_tabelas():
 
     # ADMIN
     conn.execute("""
-    INSERT OR IGNORE INTO admins (id, usuario, senha)
+    INSERT OR IGNORE INTO admins (id,usuario,senha)
     VALUES (1,'troia','1234')
     """)
 
@@ -80,7 +81,7 @@ def criar_tabelas():
     conn.execute("""
     INSERT OR IGNORE INTO motoristas 
     (id,nome,email,senha,veiculo,telefone,status)
-    VALUES 
+    VALUES
     (1,'Vanderson','vanderson','1234','moto,carro,van','11965144463','disponivel')
     """)
 
@@ -93,6 +94,7 @@ def home():
     return render_template("login_empresa.html")
 
 
+# LOGIN EMPRESA
 @app.route("/login_empresa", methods=["POST"])
 def login_empresa():
 
@@ -110,11 +112,36 @@ def login_empresa():
         session["empresa_id"] = empresa["id"]
         return redirect("/dashboard_empresa")
 
-    return "Login inválido"
+    return "Login empresa inválido"
 
 
+# LOGIN MOTORISTA
+@app.route("/login_motorista", methods=["POST"])
+def login_motorista():
+
+    email = request.form["email"]
+    senha = request.form["senha"]
+
+    conn = db()
+
+    motorista = conn.execute(
+        "SELECT * FROM motoristas WHERE email=? AND senha=?",
+        (email, senha)
+    ).fetchone()
+
+    if motorista:
+        session["motorista_id"] = motorista["id"]
+        return redirect("/dashboard_motorista")
+
+    return "Login motorista inválido"
+
+
+# DASHBOARD EMPRESA
 @app.route("/dashboard_empresa")
 def dashboard_empresa():
+
+    if "empresa_id" not in session:
+        return redirect("/")
 
     conn = db()
 
@@ -126,11 +153,33 @@ def dashboard_empresa():
     return render_template("dashboard_empresa.html", entregas=entregas)
 
 
+# DASHBOARD MOTORISTA
+@app.route("/dashboard_motorista")
+def dashboard_motorista():
+
+    if "motorista_id" not in session:
+        return redirect("/")
+
+    conn = db()
+
+    entregas = conn.execute(
+        "SELECT * FROM entregas WHERE status='procurando_motorista'"
+    ).fetchall()
+
+    return render_template("dashboard_motorista.html", entregas=entregas)
+
+
+# CRIAR ENTREGA
 @app.route("/criar_entrega")
 def criar_entrega():
+
+    if "empresa_id" not in session:
+        return redirect("/")
+
     return render_template("criar_entrega.html")
 
 
+# CALCULAR DISTÂNCIA
 def calcular_distancia(origem, destino):
 
     url = f"https://maps.googleapis.com/maps/api/distancematrix/json?origins={origem}&destinations={destino}&key={GOOGLE_API_KEY}"
@@ -144,6 +193,7 @@ def calcular_distancia(origem, destino):
     return km
 
 
+# CALCULAR VALOR
 def calcular_valor(km, veiculo):
 
     taxa = {
@@ -155,8 +205,12 @@ def calcular_valor(km, veiculo):
     return taxa[veiculo] + (km * 1.5)
 
 
+# SALVAR ENTREGA
 @app.route("/salvar_entrega", methods=["POST"])
 def salvar_entrega():
+
+    if "empresa_id" not in session:
+        return redirect("/")
 
     coleta = request.form["coleta"]
     destino = request.form["destino"]
@@ -168,18 +222,22 @@ def salvar_entrega():
 
     conn = db()
 
-    conn.execute(
-        """
-        INSERT INTO entregas 
-        (empresa_id, coleta, destino, distancia, valor, status) 
+    conn.execute("""
+        INSERT INTO entregas
+        (empresa_id,coleta,destino,distancia,valor,status)
         VALUES (?,?,?,?,?,?)
-        """,
-        (session["empresa_id"], coleta, destino, km, valor, "procurando_motorista")
-    )
+    """, (session["empresa_id"], coleta, destino, km, valor, "procurando_motorista"))
 
     conn.commit()
 
     return redirect("/dashboard_empresa")
+
+
+# LOGOUT
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
 
 
 if __name__ == "__main__":
