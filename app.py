@@ -5,7 +5,7 @@ import requests
 app = Flask(__name__)
 app.secret_key = "motorista24h"
 
-GOOGLE_API_KEY = "AIzaSyBnpIgc5k0bckNxjW4y4mDM4W-C9VRP8EQ"
+GOOGLE_API_KEY = "COLE_SUA_API_AQUI"
 
 DATABASE = "database.db"
 
@@ -17,6 +17,7 @@ def db():
 
 
 def criar_tabelas():
+
     conn = db()
 
     conn.execute("""
@@ -35,9 +36,18 @@ def criar_tabelas():
         email TEXT,
         senha TEXT,
         veiculo TEXT,
+        telefone TEXT,
         latitude REAL,
         longitude REAL,
         status TEXT
+    )
+    """)
+
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS admins (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario TEXT,
+        senha TEXT
     )
     """)
 
@@ -52,6 +62,26 @@ def criar_tabelas():
         valor REAL,
         status TEXT
     )
+    """)
+
+    # ADMIN
+    conn.execute("""
+    INSERT OR IGNORE INTO admins (id, usuario, senha)
+    VALUES (1,'troia','1234')
+    """)
+
+    # EMPRESA
+    conn.execute("""
+    INSERT OR IGNORE INTO empresas (id,nome,email,senha)
+    VALUES (1,'Wagner','wagner','1234')
+    """)
+
+    # MOTORISTA
+    conn.execute("""
+    INSERT OR IGNORE INTO motoristas 
+    (id,nome,email,senha,veiculo,telefone,status)
+    VALUES 
+    (1,'Vanderson','vanderson','1234','moto,carro,van','11965144463','disponivel')
     """)
 
     conn.commit()
@@ -139,7 +169,11 @@ def salvar_entrega():
     conn = db()
 
     conn.execute(
-        "INSERT INTO entregas (empresa_id, coleta, destino, distancia, valor, status) VALUES (?,?,?,?,?,?)",
+        """
+        INSERT INTO entregas 
+        (empresa_id, coleta, destino, distancia, valor, status) 
+        VALUES (?,?,?,?,?,?)
+        """,
         (session["empresa_id"], coleta, destino, km, valor, "procurando_motorista")
     )
 
