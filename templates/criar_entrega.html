@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="UTF-8">
+
+<title>Criar Entrega</title>
+
+<link rel="stylesheet" href="/static/css/style.css">
+
+<script src="https://maps.googleapis.com/maps/api/js?key=COLE_SUA_API_AQUI&libraries=places"></script>
+
+<script src="/static/js/mapa.js"></script>
+
+</head>
+
+<body>
+
+<h2>Criar Entrega</h2>
+
+<form action="/salvar_entrega" method="post">
+
+<input id="coleta" name="coleta" placeholder="Endereço de coleta" required>
+
+<input id="destino" name="destino" placeholder="Endereço de destino" required>
+
+<select name="veiculo">
+
+<option value="moto">Moto</option>
+<option value="carro">Carro</option>
+<option value="van">Van</option>
+
+</select>
+
+<button type="submit">Calcular e Criar</button>
+
+</form>
+
+<div id="mapa"></div>
+
+</body>
+</html>
