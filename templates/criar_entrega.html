@@ -1,42 +1,47 @@
 <!DOCTYPE html>
 <html>
-<head>
 
-<meta charset="UTF-8">
+<head>
 
 <title>Criar Entrega</title>
 
-<link rel="stylesheet" href="/static/css/style.css">
-
-<script src="https://maps.googleapis.com/maps/api/js?key=COLE_SUA_API_AQUI&libraries=places"></script>
-
-<script src="/static/js/mapa.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
 
 </head>
 
 <body>
 
-<h2>Criar Entrega</h2>
+<div class="container">
+
+<h2>Nova Entrega</h2>
+
+<a href="/dashboard_empresa" class="btn btn-secondary">
+Voltar
+</a>
+
+<hr>
 
 <form action="/salvar_entrega" method="post">
 
-<input id="coleta" name="coleta" placeholder="Endereço de coleta" required>
+<label>Coleta</label>
 
-<input id="destino" name="destino" placeholder="Endereço de destino" required>
+<input name="coleta" class="form-control">
 
-<select name="veiculo">
+<label>Destino</label>
 
-<option value="moto">Moto</option>
-<option value="carro">Carro</option>
-<option value="van">Van</option>
+<input name="destino" class="form-control">
 
-</select>
+<label>KM</label>
 
-<button type="submit">Calcular e Criar</button>
+<input name="km" class="form-control">
+
+<button class="btn btn-success mt-3">
+Criar Corrida
+</button>
 
 </form>
 
-<div id="mapa"></div>
+</div>
 
 </body>
 </html>
