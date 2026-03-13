@@ -8,6 +8,7 @@ app.secret_key = "motorista24h"
 
 DATABASE = "database.db"
 
+# API GOOGLE FIXA
 GOOGLE_API_KEY = "AIzaSyBnpIgc5k0bckNxjW4y4mDM4W-C9VRP8EQ"
 
 
@@ -70,14 +71,17 @@ def criar_tabelas():
     )
     """)
 
+    # ADMIN PADRÃO
     conn.execute("""
     INSERT OR IGNORE INTO admins VALUES (1,'troia','1234')
     """)
 
+    # EMPRESA TESTE
     conn.execute("""
     INSERT OR IGNORE INTO empresas VALUES (1,'Wagner','wagner','1234')
     """)
 
+    # MOTORISTA TESTE
     conn.execute("""
     INSERT OR IGNORE INTO motoristas VALUES
     (1,'Vanderson','vanderson','1234','11965144463','moto,carro,van',-23.185,-46.897,'offline')
@@ -92,7 +96,7 @@ def criar_tabelas():
 # -------------------------------
 @app.route("/")
 def home():
-    return render_template("login_empresa.html")
+    return render_template("login.html")
 
 
 # -------------------------------
@@ -101,14 +105,14 @@ def home():
 @app.route("/login_empresa", methods=["POST"])
 def login_empresa():
 
-    email = request.form["email"]
-    senha = request.form["senha"]
+    usuario = request.form.get("usuario")
+    senha = request.form.get("senha")
 
     conn = db()
 
     empresa = conn.execute(
         "SELECT * FROM empresas WHERE email=? AND senha=?",
-        (email, senha)
+        (usuario, senha)
     ).fetchone()
 
     conn.close()
@@ -126,14 +130,14 @@ def login_empresa():
 @app.route("/login_motorista", methods=["POST"])
 def login_motorista():
 
-    email = request.form["email"]
-    senha = request.form["senha"]
+    usuario = request.form.get("usuario")
+    senha = request.form.get("senha")
 
     conn = db()
 
     motorista = conn.execute(
         "SELECT * FROM motoristas WHERE email=? AND senha=?",
-        (email, senha)
+        (usuario, senha)
     ).fetchone()
 
     conn.close()
@@ -242,13 +246,15 @@ def calcular_distancia(origem, destino):
 # -------------------------------
 def calcular_valor(km, veiculo):
 
-    taxa = {
+    taxas = {
         "moto": 10,
         "carro": 12,
         "van": 15
     }
 
-    valor_base = taxa[veiculo] + (km * 1.5)
+    taxa_base = taxas.get(veiculo, 10)
+
+    valor_base = taxa_base + (km * 1.5)
 
     taxa_plataforma = valor_base * 0.10
 
@@ -308,7 +314,7 @@ def gerar_link_whatsapp(telefone, coleta, destino, valor, entrega_id):
 📍 Coleta: {coleta}
 🏁 Destino: {destino}
 
-💰 Ganho: R$ {valor}
+💰 Ganho: R$ {round(valor,2)}
 
 Aceitar corrida:
 https://motorista24h.onrender.com/aceitar_entrega/{entrega_id}
@@ -377,9 +383,18 @@ def salvar_entrega():
 
         links.append(link)
 
+    conn = db()
+
+    entregas = conn.execute(
+        "SELECT * FROM entregas WHERE empresa_id=?",
+        (session["empresa_id"],)
+    ).fetchall()
+
+    conn.close()
+
     return render_template(
         "dashboard_empresa.html",
-        entregas=[],
+        entregas=entregas,
         links_whatsapp=links
     )
 
