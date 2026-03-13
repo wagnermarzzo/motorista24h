@@ -96,7 +96,7 @@ def criar_tabelas():
 # =============================
 @app.route("/")
 def home():
-    return render_template("login.html")
+    return render_template("login_empresa.html")
 
 
 # =============================
