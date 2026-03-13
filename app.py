@@ -16,9 +16,6 @@ def db():
     return conn
 
 
-# =============================
-# CRIAR TABELAS
-# =============================
 def criar_tabelas():
 
     conn = db()
@@ -27,7 +24,7 @@ def criar_tabelas():
     CREATE TABLE IF NOT EXISTS empresas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nome TEXT,
-        email TEXT UNIQUE,
+        email TEXT,
         senha TEXT
     )
     """)
@@ -36,12 +33,10 @@ def criar_tabelas():
     CREATE TABLE IF NOT EXISTS motoristas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nome TEXT,
-        email TEXT UNIQUE,
+        email TEXT,
         senha TEXT,
         veiculo TEXT,
         telefone TEXT,
-        latitude REAL,
-        longitude REAL,
         status TEXT
     )
     """)
@@ -49,7 +44,7 @@ def criar_tabelas():
     conn.execute("""
     CREATE TABLE IF NOT EXISTS admins (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        usuario TEXT UNIQUE,
+        usuario TEXT,
         senha TEXT
     )
     """)
@@ -67,46 +62,37 @@ def criar_tabelas():
     )
     """)
 
-    # ADMIN
     conn.execute("""
     INSERT OR IGNORE INTO admins (id,usuario,senha)
     VALUES (1,'troia','1234')
     """)
 
-    # EMPRESA
     conn.execute("""
     INSERT OR IGNORE INTO empresas (id,nome,email,senha)
     VALUES (1,'Wagner','wagner','1234')
     """)
 
-    # MOTORISTA
     conn.execute("""
-    INSERT OR IGNORE INTO motoristas
-    (id,nome,email,senha,veiculo,telefone,latitude,longitude,status)
+    INSERT OR IGNORE INTO motoristas 
+    (id,nome,email,senha,veiculo,telefone,status)
     VALUES
-    (1,'Vanderson','vanderson','1234','moto,carro,van','11965144463',0,0,'disponivel')
+    (1,'Vanderson','vanderson','1234','moto,carro,van','11965144463','disponivel')
     """)
 
     conn.commit()
     conn.close()
 
 
-# =============================
-# HOME
-# =============================
 @app.route("/")
 def home():
     return render_template("login_empresa.html")
 
 
-# =============================
-# LOGIN EMPRESA
-# =============================
 @app.route("/login_empresa", methods=["POST"])
 def login_empresa():
 
-    email = request.form.get("email")
-    senha = request.form.get("senha")
+    email = request.form["email"]
+    senha = request.form["senha"]
 
     conn = db()
 
@@ -124,14 +110,11 @@ def login_empresa():
     return "Login empresa inválido"
 
 
-# =============================
-# LOGIN MOTORISTA
-# =============================
 @app.route("/login_motorista", methods=["POST"])
 def login_motorista():
 
-    email = request.form.get("email")
-    senha = request.form.get("senha")
+    email = request.form["email"]
+    senha = request.form["senha"]
 
     conn = db()
 
@@ -149,9 +132,28 @@ def login_motorista():
     return "Login motorista inválido"
 
 
-# =============================
-# DASHBOARD EMPRESA
-# =============================
+@app.route("/login_admin", methods=["POST"])
+def login_admin():
+
+    usuario = request.form["usuario"]
+    senha = request.form["senha"]
+
+    conn = db()
+
+    admin = conn.execute(
+        "SELECT * FROM admins WHERE usuario=? AND senha=?",
+        (usuario, senha)
+    ).fetchone()
+
+    conn.close()
+
+    if admin:
+        session["admin_id"] = admin["id"]
+        return redirect("/dashboard_admin")
+
+    return "Login admin inválido"
+
+
 @app.route("/dashboard_empresa")
 def dashboard_empresa():
 
@@ -170,9 +172,6 @@ def dashboard_empresa():
     return render_template("dashboard_empresa.html", entregas=entregas)
 
 
-# =============================
-# DASHBOARD MOTORISTA
-# =============================
 @app.route("/dashboard_motorista")
 def dashboard_motorista():
 
@@ -190,9 +189,28 @@ def dashboard_motorista():
     return render_template("dashboard_motorista.html", entregas=entregas)
 
 
-# =============================
-# CRIAR ENTREGA
-# =============================
+@app.route("/dashboard_admin")
+def dashboard_admin():
+
+    if "admin_id" not in session:
+        return redirect("/")
+
+    conn = db()
+
+    empresas = conn.execute("SELECT * FROM empresas").fetchall()
+    motoristas = conn.execute("SELECT * FROM motoristas").fetchall()
+    entregas = conn.execute("SELECT * FROM entregas").fetchall()
+
+    conn.close()
+
+    return render_template(
+        "dashboard_admin.html",
+        empresas=empresas,
+        motoristas=motoristas,
+        entregas=entregas
+    )
+
+
 @app.route("/criar_entrega")
 def criar_entrega():
 
@@ -202,31 +220,25 @@ def criar_entrega():
     return render_template("criar_entrega.html")
 
 
-# =============================
-# CALCULAR DISTANCIA GOOGLE
-# =============================
 def calcular_distancia(origem, destino):
 
     try:
 
         url = f"https://maps.googleapis.com/maps/api/distancematrix/json?origins={origem}&destinations={destino}&key={GOOGLE_API_KEY}"
 
-        r = requests.get(url)
-        data = r.json()
+        r = requests.get(url).json()
 
-        metros = data["rows"][0]["elements"][0]["distance"]["value"]
+        metros = r["rows"][0]["elements"][0]["distance"]["value"]
 
         km = metros / 1000
 
         return km
 
     except:
+
         return 5
 
 
-# =============================
-# CALCULAR VALOR
-# =============================
 def calcular_valor(km, veiculo):
 
     taxa = {
@@ -235,21 +247,18 @@ def calcular_valor(km, veiculo):
         "van": 15
     }
 
-    return taxa.get(veiculo, 10) + (km * 1.5)
+    return taxa[veiculo] + (km * 1.5)
 
 
-# =============================
-# SALVAR ENTREGA
-# =============================
 @app.route("/salvar_entrega", methods=["POST"])
 def salvar_entrega():
 
     if "empresa_id" not in session:
         return redirect("/")
 
-    coleta = request.form.get("coleta")
-    destino = request.form.get("destino")
-    veiculo = request.form.get("veiculo")
+    coleta = request.form["coleta"]
+    destino = request.form["destino"]
+    veiculo = request.form["veiculo"]
 
     km = calcular_distancia(coleta, destino)
 
@@ -264,14 +273,12 @@ def salvar_entrega():
     """, (session["empresa_id"], coleta, destino, km, valor, "procurando_motorista"))
 
     conn.commit()
+
     conn.close()
 
     return redirect("/dashboard_empresa")
 
 
-# =============================
-# LOGOUT
-# =============================
 @app.route("/logout")
 def logout():
 
@@ -280,9 +287,6 @@ def logout():
     return redirect("/")
 
 
-# =============================
-# START APP
-# =============================
 if __name__ == "__main__":
     criar_tabelas()
     app.run(host="0.0.0.0", port=10000)
