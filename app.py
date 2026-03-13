@@ -1,13 +1,14 @@
 from flask import Flask, render_template, request, redirect, session
 import sqlite3
 import requests
+import math
 
 app = Flask(__name__)
 app.secret_key = "motorista24h"
 
-GOOGLE_API_KEY = "AIzaSyBnpIgc5k0bckNxjW4y4mDM4W-C9VRP8EQ"
-
 DATABASE = "database.db"
+
+GOOGLE_API_KEY = "AIzaSyBnpIgc5k0bckNxjW4y4mDM4W-C9VRP8EQ"
 
 
 def db():
@@ -16,6 +17,9 @@ def db():
     return conn
 
 
+# -------------------------------
+# CRIAR TABELAS
+# -------------------------------
 def criar_tabelas():
 
     conn = db()
@@ -35,8 +39,25 @@ def criar_tabelas():
         nome TEXT,
         email TEXT,
         senha TEXT,
-        veiculo TEXT,
         telefone TEXT,
+        veiculo TEXT,
+        latitude REAL,
+        longitude REAL,
+        status_online TEXT
+    )
+    """)
+
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS entregas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        empresa_id INTEGER,
+        motorista_id INTEGER,
+        coleta TEXT,
+        destino TEXT,
+        distancia REAL,
+        valor_motorista REAL,
+        taxa_plataforma REAL,
+        valor_empresa REAL,
         status TEXT
     )
     """)
@@ -50,44 +71,33 @@ def criar_tabelas():
     """)
 
     conn.execute("""
-    CREATE TABLE IF NOT EXISTS entregas (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        empresa_id INTEGER,
-        motorista_id INTEGER,
-        coleta TEXT,
-        destino TEXT,
-        distancia REAL,
-        valor REAL,
-        status TEXT
-    )
+    INSERT OR IGNORE INTO admins VALUES (1,'troia','1234')
     """)
 
     conn.execute("""
-    INSERT OR IGNORE INTO admins (id,usuario,senha)
-    VALUES (1,'troia','1234')
+    INSERT OR IGNORE INTO empresas VALUES (1,'Wagner','wagner','1234')
     """)
 
     conn.execute("""
-    INSERT OR IGNORE INTO empresas (id,nome,email,senha)
-    VALUES (1,'Wagner','wagner','1234')
-    """)
-
-    conn.execute("""
-    INSERT OR IGNORE INTO motoristas 
-    (id,nome,email,senha,veiculo,telefone,status)
-    VALUES
-    (1,'Vanderson','vanderson','1234','moto,carro,van','11965144463','disponivel')
+    INSERT OR IGNORE INTO motoristas VALUES
+    (1,'Vanderson','vanderson','1234','11965144463','moto,carro,van',-23.185,-46.897,'offline')
     """)
 
     conn.commit()
     conn.close()
 
 
+# -------------------------------
+# HOME
+# -------------------------------
 @app.route("/")
 def home():
     return render_template("login_empresa.html")
 
 
+# -------------------------------
+# LOGIN EMPRESA
+# -------------------------------
 @app.route("/login_empresa", methods=["POST"])
 def login_empresa():
 
@@ -107,9 +117,12 @@ def login_empresa():
         session["empresa_id"] = empresa["id"]
         return redirect("/dashboard_empresa")
 
-    return "Login empresa inválido"
+    return "Login inválido"
 
 
+# -------------------------------
+# LOGIN MOTORISTA
+# -------------------------------
 @app.route("/login_motorista", methods=["POST"])
 def login_motorista():
 
@@ -129,31 +142,12 @@ def login_motorista():
         session["motorista_id"] = motorista["id"]
         return redirect("/dashboard_motorista")
 
-    return "Login motorista inválido"
+    return "Login inválido"
 
 
-@app.route("/login_admin", methods=["POST"])
-def login_admin():
-
-    usuario = request.form["usuario"]
-    senha = request.form["senha"]
-
-    conn = db()
-
-    admin = conn.execute(
-        "SELECT * FROM admins WHERE usuario=? AND senha=?",
-        (usuario, senha)
-    ).fetchone()
-
-    conn.close()
-
-    if admin:
-        session["admin_id"] = admin["id"]
-        return redirect("/dashboard_admin")
-
-    return "Login admin inválido"
-
-
+# -------------------------------
+# DASHBOARD EMPRESA
+# -------------------------------
 @app.route("/dashboard_empresa")
 def dashboard_empresa():
 
@@ -169,9 +163,15 @@ def dashboard_empresa():
 
     conn.close()
 
-    return render_template("dashboard_empresa.html", entregas=entregas)
+    return render_template(
+        "dashboard_empresa.html",
+        entregas=entregas
+    )
 
 
+# -------------------------------
+# DASHBOARD MOTORISTA
+# -------------------------------
 @app.route("/dashboard_motorista")
 def dashboard_motorista():
 
@@ -186,40 +186,38 @@ def dashboard_motorista():
 
     conn.close()
 
-    return render_template("dashboard_motorista.html", entregas=entregas)
-
-
-@app.route("/dashboard_admin")
-def dashboard_admin():
-
-    if "admin_id" not in session:
-        return redirect("/")
-
-    conn = db()
-
-    empresas = conn.execute("SELECT * FROM empresas").fetchall()
-    motoristas = conn.execute("SELECT * FROM motoristas").fetchall()
-    entregas = conn.execute("SELECT * FROM entregas").fetchall()
-
-    conn.close()
-
     return render_template(
-        "dashboard_admin.html",
-        empresas=empresas,
-        motoristas=motoristas,
+        "dashboard_motorista.html",
         entregas=entregas
     )
 
 
-@app.route("/criar_entrega")
-def criar_entrega():
+# -------------------------------
+# MOTORISTA ONLINE / OFFLINE
+# -------------------------------
+@app.route("/status_online/<status>")
+def status_online(status):
 
-    if "empresa_id" not in session:
+    if "motorista_id" not in session:
         return redirect("/")
 
-    return render_template("criar_entrega.html")
+    conn = db()
+
+    conn.execute("""
+    UPDATE motoristas
+    SET status_online=?
+    WHERE id=?
+    """,(status,session["motorista_id"]))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/dashboard_motorista")
 
 
+# -------------------------------
+# CALCULAR DISTANCIA GOOGLE
+# -------------------------------
 def calcular_distancia(origem, destino):
 
     try:
@@ -239,6 +237,9 @@ def calcular_distancia(origem, destino):
         return 5
 
 
+# -------------------------------
+# CALCULAR VALOR
+# -------------------------------
 def calcular_valor(km, veiculo):
 
     taxa = {
@@ -247,9 +248,92 @@ def calcular_valor(km, veiculo):
         "van": 15
     }
 
-    return taxa[veiculo] + (km * 1.5)
+    valor_base = taxa[veiculo] + (km * 1.5)
+
+    taxa_plataforma = valor_base * 0.10
+
+    valor_empresa = valor_base + taxa_plataforma
+
+    return valor_base, taxa_plataforma, valor_empresa
 
 
+# -------------------------------
+# DISTANCIA ENTRE MOTORISTAS
+# -------------------------------
+def distancia(lat1, lon1, lat2, lon2):
+
+    return math.sqrt(
+        (lat1 - lat2) ** 2 +
+        (lon1 - lon2) ** 2
+    )
+
+
+def buscar_motoristas_proximos():
+
+    conn = db()
+
+    motoristas = conn.execute("""
+    SELECT * FROM motoristas
+    WHERE status_online='online'
+    """).fetchall()
+
+    conn.close()
+
+    lista = []
+
+    for m in motoristas:
+
+        d = distancia(
+            -23.185,
+            -46.897,
+            m["latitude"],
+            m["longitude"]
+        )
+
+        lista.append((d, m))
+
+    lista.sort(key=lambda x: x[0])
+
+    return [m[1] for m in lista[:3]]
+
+
+# -------------------------------
+# GERAR LINK WHATSAPP
+# -------------------------------
+def gerar_link_whatsapp(telefone, coleta, destino, valor, entrega_id):
+
+    mensagem = f"""
+🚚 Nova corrida disponível
+
+📍 Coleta: {coleta}
+🏁 Destino: {destino}
+
+💰 Ganho: R$ {valor}
+
+Aceitar corrida:
+https://motorista24h.onrender.com/aceitar_entrega/{entrega_id}
+"""
+
+    mensagem = mensagem.replace(" ", "%20").replace("\n", "%0A")
+
+    return f"https://wa.me/55{telefone}?text={mensagem}"
+
+
+# -------------------------------
+# CRIAR ENTREGA
+# -------------------------------
+@app.route("/criar_entrega")
+def criar_entrega():
+
+    if "empresa_id" not in session:
+        return redirect("/")
+
+    return render_template("criar_entrega.html")
+
+
+# -------------------------------
+# SALVAR ENTREGA
+# -------------------------------
 @app.route("/salvar_entrega", methods=["POST"])
 def salvar_entrega():
 
@@ -262,23 +346,81 @@ def salvar_entrega():
 
     km = calcular_distancia(coleta, destino)
 
-    valor = calcular_valor(km, veiculo)
+    valor_motorista, taxa_plataforma, valor_empresa = calcular_valor(km, veiculo)
 
     conn = db()
 
-    conn.execute("""
-        INSERT INTO entregas
-        (empresa_id,coleta,destino,distancia,valor,status)
-        VALUES (?,?,?,?,?,?)
-    """, (session["empresa_id"], coleta, destino, km, valor, "procurando_motorista"))
+    cursor = conn.execute("""
+    INSERT INTO entregas
+    (empresa_id,coleta,destino,distancia,valor_motorista,taxa_plataforma,valor_empresa,status)
+    VALUES (?,?,?,?,?,?,?,?)
+    """,(session["empresa_id"],coleta,destino,km,valor_motorista,taxa_plataforma,valor_empresa,"procurando_motorista"))
+
+    entrega_id = cursor.lastrowid
 
     conn.commit()
-
     conn.close()
 
-    return redirect("/dashboard_empresa")
+    motoristas = buscar_motoristas_proximos()
+
+    links = []
+
+    for m in motoristas:
+
+        link = gerar_link_whatsapp(
+            m["telefone"],
+            coleta,
+            destino,
+            valor_motorista,
+            entrega_id
+        )
+
+        links.append(link)
+
+    return render_template(
+        "dashboard_empresa.html",
+        entregas=[],
+        links_whatsapp=links
+    )
 
 
+# -------------------------------
+# ACEITAR ENTREGA
+# -------------------------------
+@app.route("/aceitar_entrega/<int:id>")
+def aceitar_entrega(id):
+
+    if "motorista_id" not in session:
+        return redirect("/")
+
+    conn = db()
+
+    entrega = conn.execute(
+        "SELECT * FROM entregas WHERE id=?",
+        (id,)
+    ).fetchone()
+
+    if entrega["status"] != "procurando_motorista":
+
+        conn.close()
+
+        return "Corrida já aceita"
+
+    conn.execute("""
+    UPDATE entregas
+    SET motorista_id=?, status='em_entrega'
+    WHERE id=?
+    """,(session["motorista_id"],id))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/dashboard_motorista")
+
+
+# -------------------------------
+# LOGOUT
+# -------------------------------
 @app.route("/logout")
 def logout():
 
