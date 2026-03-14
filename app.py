@@ -8,26 +8,25 @@ app.secret_key = "motorista24h"
 
 DATABASE = "database.db"
 
-# ==============================
-# COLOQUE SUA API DO GOOGLE AQUI
-# ==============================
+# =================================
+# CONFIGURAÇÕES
+# =================================
 
 GOOGLE_API_KEY = "AIzaSyBnpIgc5k0bckNxjW4y4mDM4W-C9VRP8EQ"
 
+# modo teste evita usar google maps
+MODO_TESTE = True
 
-# ==============================
-# CONEXÃO COM BANCO
-# ==============================
+
+# =================================
+# BANCO DE DADOS
+# =================================
 
 def db():
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     return conn
 
-
-# ==============================
-# CRIAR TABELAS
-# ==============================
 
 def criar_tabelas():
 
@@ -67,9 +66,9 @@ def criar_tabelas():
 criar_tabelas()
 
 
-# ==============================
+# =================================
 # VALIDAR CNPJ
-# ==============================
+# =================================
 
 def validar_cnpj(cnpj):
 
@@ -93,11 +92,14 @@ def validar_cnpj(cnpj):
         return False, None
 
 
-# ==============================
-# CALCULAR DISTÂNCIA
-# ==============================
+# =================================
+# CALCULAR DISTANCIA
+# =================================
 
 def calcular_distancia(origem, destino):
+
+    if MODO_TESTE:
+        return random.randint(3, 25)
 
     url = "https://maps.googleapis.com/maps/api/distancematrix/json"
 
@@ -119,9 +121,9 @@ def calcular_distancia(origem, destino):
     return round(distancia_km, 2)
 
 
-# ==============================
+# =================================
 # CALCULAR VALOR
-# ==============================
+# =================================
 
 def calcular_valor(distancia, veiculo):
 
@@ -142,9 +144,9 @@ def calcular_valor(distancia, veiculo):
     return round(total, 2)
 
 
-# ==============================
-# PÁGINA INICIAL
-# ==============================
+# =================================
+# PAGINA INICIAL
+# =================================
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -171,13 +173,11 @@ def index():
         conn = db()
 
         conn.execute(
-
             """
             INSERT INTO corridas
             (cnpj, empresa, telefone, origem, destino, veiculo, distancia, valor_total, codigo_confirmacao, status)
             VALUES (?,?,?,?,?,?,?,?,?,?)
             """,
-
             (
                 cnpj,
                 empresa,
@@ -190,7 +190,6 @@ def index():
                 codigo,
                 "aguardando_confirmacao"
             )
-
         )
 
         conn.commit()
@@ -198,20 +197,19 @@ def index():
 
         session["codigo"] = codigo
 
-        print("Código enviado WhatsApp:", codigo)
-
         return render_template(
             "confirmar_codigo.html",
             valor=valor,
-            distancia=distancia
+            distancia=distancia,
+            codigo=codigo
         )
 
     return render_template("index.html")
 
 
-# ==============================
-# CONFIRMAR CÓDIGO
-# ==============================
+# =================================
+# CONFIRMAR CODIGO
+# =================================
 
 @app.route("/confirmar", methods=["POST"])
 def confirmar():
@@ -223,15 +221,12 @@ def confirmar():
         conn = db()
 
         conn.execute(
-
             """
             UPDATE corridas
             SET status = 'aguardando_motorista'
             WHERE codigo_confirmacao = ?
             """,
-
             (codigo_digitado,)
-
         )
 
         conn.commit()
@@ -241,6 +236,26 @@ def confirmar():
 
     return "Código incorreto"
 
+
+# =================================
+# VER CORRIDAS (PAINEL TESTE)
+# =================================
+
+@app.route("/corridas")
+def corridas():
+
+    conn = db()
+
+    corridas = conn.execute(
+        "SELECT * FROM corridas ORDER BY id DESC"
+    ).fetchall()
+
+    conn.close()
+
+    return render_template("corridas.html", corridas=corridas)
+
+
+# =================================
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
