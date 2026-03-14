@@ -1,31 +1,180 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 
 <head>
+
+<meta charset="UTF-8">
 <title>Motorista24H</title>
+
+<style>
+
+body{
+
+margin:0;
+font-family:Arial, Helvetica, sans-serif;
+
+background-image:url("/static/img/capa_motorista24h.png");
+background-size:cover;
+background-position:center;
+height:100vh;
+
+display:flex;
+flex-direction:column;
+
+}
+
+header{
+
+display:flex;
+justify-content:space-between;
+align-items:center;
+
+padding:20px 40px;
+
+background:rgba(0,0,0,0.4);
+color:white;
+
+}
+
+.logo{
+
+font-size:28px;
+font-weight:bold;
+
+}
+
+.top-buttons{
+
+display:flex;
+gap:15px;
+
+}
+
+.top-buttons a{
+
+text-decoration:none;
+color:white;
+
+padding:10px 18px;
+
+background:#333;
+border-radius:6px;
+
+font-size:14px;
+
+}
+
+.container{
+
+flex:1;
+
+display:flex;
+justify-content:center;
+align-items:center;
+
+}
+
+.form-box{
+
+background:white;
+
+padding:40px;
+
+border-radius:12px;
+
+width:350px;
+
+box-shadow:0 10px 30px rgba(0,0,0,0.3);
+
+text-align:center;
+
+}
+
+.form-box h2{
+
+margin-bottom:20px;
+
+}
+
+input,select{
+
+width:100%;
+
+padding:10px;
+
+margin-bottom:12px;
+
+border:1px solid #ccc;
+
+border-radius:6px;
+
+}
+
+button{
+
+width:100%;
+
+padding:12px;
+
+background:red;
+
+border:none;
+
+color:white;
+
+font-size:16px;
+
+border-radius:6px;
+
+cursor:pointer;
+
+}
+
+button:hover{
+
+background:#cc0000;
+
+}
+
+</style>
+
 </head>
 
 <body>
 
-<h2>Solicitar Motorista Urgente</h2>
+<header>
 
-<form method="post">
+<div class="logo">
 
-<input name="cnpj" placeholder="CNPJ" required>
+Motorista24H
 
-<br><br>
+</div>
 
-<input name="telefone" placeholder="WhatsApp" required>
+<div class="top-buttons">
 
-<br><br>
+<a href="/admin">Painel ADM</a>
 
-<input name="origem" placeholder="Endereço de coleta" required>
+<a href="/motorista">🪖 Entrar / Cadastrar</a>
 
-<br><br>
+</div>
 
-<input name="destino" placeholder="Endereço de destino" required>
+</header>
 
-<br><br>
+<div class="container">
+
+<div class="form-box">
+
+<h2>Solicite um Motorista Urgente</h2>
+
+<form method="POST" action="/calcular">
+
+<input type="text" name="cnpj" placeholder="CNPJ" required>
+
+<input type="text" name="telefone" placeholder="WhatsApp" required>
+
+<input type="text" name="origem" placeholder="Endereço de coleta" required>
+
+<input type="text" name="destino" placeholder="Endereço de destino" required>
 
 <select name="veiculo">
 
@@ -35,11 +184,17 @@
 
 </select>
 
-<br><br>
+<button type="submit">
 
-<button type="submit">Calcular entrega</button>
+Calcular Corrida
+
+</button>
 
 </form>
+
+</div>
+
+</div>
 
 </body>
 </html>
