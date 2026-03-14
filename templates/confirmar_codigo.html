@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Confirmar corrida</title>
+</head>
+
+<body>
+
+<h2>Resumo da corrida</h2>
+
+<p>Distância: {{distancia}} km</p>
+
+<p>Valor total: R$ {{valor}}</p>
+
+<p>Digite o código enviado para o WhatsApp</p>
+
+<form action="/confirmar" method="post">
+
+<input name="codigo" placeholder="Código">
+
+<br><br>
+
+<button type="submit">Confirmar corrida</button>
+
+</form>
+
+</body>
+</html>
