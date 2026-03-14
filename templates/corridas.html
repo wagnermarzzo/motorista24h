@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Corridas</title>
+</head>
+
+<body>
+
+<h2>Corridas registradas</h2>
+
+<table border="1">
+
+<tr>
+<th>ID</th>
+<th>Empresa</th>
+<th>Origem</th>
+<th>Destino</th>
+<th>Valor</th>
+<th>Status</th>
+</tr>
+
+{% for c in corridas %}
+
+<tr>
+
+<td>{{c.id}}</td>
+<td>{{c.empresa}}</td>
+<td>{{c.origem}}</td>
+<td>{{c.destino}}</td>
+<td>R$ {{c.valor_total}}</td>
+<td>{{c.status}}</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</body>
+</html>
