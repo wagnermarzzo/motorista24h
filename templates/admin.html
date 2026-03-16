@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+
+<meta charset="UTF-8">
+<title>Painel ADM - Motorista24H</title>
+
+<style>
+
+body{
+font-family:Arial;
+margin:0;
+background:#f4f4f4;
+}
+
+header{
+
+background:#111;
+color:white;
+
+padding:20px;
+
+display:flex;
+justify-content:space-between;
+align-items:center;
+
+}
+
+.container{
+padding:40px;
+}
+
+table{
+
+width:100%;
+border-collapse:collapse;
+background:white;
+
+box-shadow:0 5px 20px rgba(0,0,0,0.2);
+
+}
+
+th,td{
+padding:12px;
+text-align:left;
+border-bottom:1px solid #ddd;
+}
+
+th{
+background:#222;
+color:white;
+}
+
+tr:hover{
+background:#f2f2f2;
+}
+
+.status{
+font-weight:bold;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+<h2>Painel Administrativo</h2>
+
+<a href="/" style="color:white;text-decoration:none;">Voltar ao site</a>
+
+</header>
+
+<div class="container">
+
+<h3>Corridas registradas</h3>
+
+<table>
+
+<tr>
+
+<th>ID</th>
+<th>Empresa</th>
+<th>Telefone</th>
+<th>Origem</th>
+<th>Destino</th>
+<th>Veículo</th>
+<th>Distância</th>
+<th>Valor</th>
+<th>Status</th>
+
+</tr>
+
+{% for c in corridas %}
+
+<tr>
+
+<td>{{c.id}}</td>
+<td>{{c.empresa}}</td>
+<td>{{c.telefone}}</td>
+<td>{{c.origem}}</td>
+<td>{{c.destino}}</td>
+<td>{{c.veiculo}}</td>
+<td>{{c.distancia}} km</td>
+<td>R$ {{c.valor_total}}</td>
+<td class="status">{{c.status}}</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
+
+</body>
+</html>
