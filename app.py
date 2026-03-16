@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, session
+from flask import Flask, render_template, request, session, redirect
 import sqlite3
 import requests
 import random
@@ -12,6 +12,9 @@ DATABASE = "database.db"
 GOOGLE_API_KEY = "AIzaSyBnpIgc5k0bckNxjW4y4mDM4W-C9VRP8EQ"
 
 MODO_TESTE = True
+
+ADMIN_USER = "Troia"
+ADMIN_PASS = "88691553"
 
 
 def db():
@@ -207,8 +210,32 @@ def confirmar():
     return "Código incorreto"
 
 
+# LOGIN ADM
+@app.route("/admin-login", methods=["GET", "POST"])
+def admin_login():
+
+    if request.method == "POST":
+
+        user = request.form["usuario"]
+        senha = request.form["senha"]
+
+        if user == ADMIN_USER and senha == ADMIN_PASS:
+
+            session["admin"] = True
+
+            return redirect("/admin")
+
+        return "Login inválido"
+
+    return render_template("admin_login.html")
+
+
+# PAINEL ADM PROTEGIDO
 @app.route("/admin")
 def admin():
+
+    if not session.get("admin"):
+        return redirect("/admin-login")
 
     conn = db()
 
@@ -219,6 +246,15 @@ def admin():
     conn.close()
 
     return render_template("admin.html", corridas=corridas)
+
+
+# LOGOUT
+@app.route("/admin-logout")
+def admin_logout():
+
+    session.pop("admin", None)
+
+    return redirect("/")
 
 
 if __name__ == "__main__":
