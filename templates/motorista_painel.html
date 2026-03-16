@@ -1,1 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Painel do Motorista</title>
 
+<style>
+
+body{
+font-family:Arial;
+background:#111;
+color:white;
+padding:40px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+}
+
+th,td{
+padding:10px;
+border-bottom:1px solid #333;
+text-align:left;
+}
+
+button{
+background:#00b894;
+border:none;
+color:white;
+padding:8px 12px;
+border-radius:5px;
+cursor:pointer;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>Corridas disponíveis</h2>
+
+<table>
+
+<tr>
+<th>ID</th>
+<th>Origem</th>
+<th>Destino</th>
+<th>Valor</th>
+<th>Ação</th>
+</tr>
+
+{% for c in corridas %}
+
+<tr>
+
+<td>{{c.id}}</td>
+
+<td>{{c.origem}}</td>
+
+<td>{{c.destino}}</td>
+
+<td>R$ {{c.valor_total}}</td>
+
+<td>
+
+<a href="/aceitar/{{c.id}}">
+<button>Aceitar</button>
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</body>
+</html>
