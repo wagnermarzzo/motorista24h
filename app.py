@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, session
 import sqlite3
 import requests
 import random
+import os
 
 app = Flask(__name__)
 app.secret_key = "motorista24h"
@@ -33,7 +34,6 @@ def criar_tabelas():
     conn = db()
 
     conn.execute("""
-
     CREATE TABLE IF NOT EXISTS corridas (
 
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,7 +56,6 @@ def criar_tabelas():
         status TEXT
 
     )
-
     """)
 
     conn.commit()
@@ -256,8 +255,6 @@ def corridas():
 
 
 # =================================
-
-import os
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
