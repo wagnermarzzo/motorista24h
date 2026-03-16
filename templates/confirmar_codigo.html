@@ -2,28 +2,81 @@
 <html>
 
 <head>
+<meta charset="UTF-8">
 <title>Confirmar corrida</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f4f4f4;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+.box{
+background:white;
+padding:40px;
+border-radius:10px;
+box-shadow:0 10px 30px rgba(0,0,0,0.2);
+text-align:center;
+width:300px;
+}
+
+input{
+width:100%;
+padding:10px;
+margin-top:10px;
+margin-bottom:15px;
+border:1px solid #ccc;
+border-radius:6px;
+}
+
+button{
+width:100%;
+padding:12px;
+background:red;
+color:white;
+border:none;
+border-radius:6px;
+font-size:16px;
+cursor:pointer;
+}
+
+button:hover{
+background:#cc0000;
+}
+
+</style>
+
 </head>
 
 <body>
+
+<div class="box">
 
 <h2>Resumo da corrida</h2>
 
 <p>Distância: {{distancia}} km</p>
 
-<p>Valor total: R$ {{valor}}</p>
+<p>Valor total: <b>R$ {{valor}}</b></p>
 
 <p>Código de confirmação (modo teste): <b>{{codigo}}</b></p>
 
-<form action="/confirmar" method="post">
+<form action="/confirmar" method="POST">
 
-<input name="codigo" placeholder="Digite o código">
+<input name="codigo" placeholder="Digite o código recebido" required>
 
-<br><br>
-
-<button type="submit">Confirmar corrida</button>
+<button type="submit">
+Confirmar corrida
+</button>
 
 </form>
 
+</div>
+
 </body>
+
 </html>
