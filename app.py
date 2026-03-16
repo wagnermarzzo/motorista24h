@@ -59,6 +59,10 @@ def criar_tabelas():
 criar_tabelas()
 
 
+# =================================
+# VALIDAR CNPJ
+# =================================
+
 def validar_cnpj(cnpj):
 
     url = f"https://brasilapi.com.br/api/cnpj/v1/{cnpj}"
@@ -80,6 +84,10 @@ def validar_cnpj(cnpj):
     except:
         return False, None
 
+
+# =================================
+# CALCULAR DISTANCIA
+# =================================
 
 def calcular_distancia(origem, destino):
 
@@ -106,6 +114,10 @@ def calcular_distancia(origem, destino):
     return round(distancia_km, 2)
 
 
+# =================================
+# CALCULAR VALOR
+# =================================
+
 def calcular_valor(distancia, veiculo):
 
     taxa_fixa = {
@@ -124,6 +136,10 @@ def calcular_valor(distancia, veiculo):
 
     return round(total, 2)
 
+
+# =================================
+# PAGINA INICIAL
+# =================================
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -184,6 +200,10 @@ def index():
     return render_template("index.html")
 
 
+# =================================
+# CONFIRMAR CODIGO
+# =================================
+
 @app.route("/confirmar", methods=["POST"])
 def confirmar():
 
@@ -210,16 +230,19 @@ def confirmar():
     return "Código incorreto"
 
 
+# =================================
 # LOGIN ADM
+# =================================
+
 @app.route("/admin-login", methods=["GET", "POST"])
 def admin_login():
 
     if request.method == "POST":
 
-        user = request.form["usuario"]
+        usuario = request.form["usuario"]
         senha = request.form["senha"]
 
-        if user == ADMIN_USER and senha == ADMIN_PASS:
+        if usuario == ADMIN_USER and senha == ADMIN_PASS:
 
             session["admin"] = True
 
@@ -230,25 +253,36 @@ def admin_login():
     return render_template("admin_login.html")
 
 
-# PAINEL ADM PROTEGIDO
+# =================================
+# PAINEL ADM
+# =================================
+
 @app.route("/admin")
 def admin():
 
     if not session.get("admin"):
         return redirect("/admin-login")
 
-    conn = db()
+    try:
 
-    corridas = conn.execute(
-        "SELECT * FROM corridas ORDER BY id DESC"
-    ).fetchall()
+        conn = db()
 
-    conn.close()
+        corridas = conn.execute(
+            "SELECT * FROM corridas ORDER BY id DESC"
+        ).fetchall()
+
+        conn.close()
+
+    except:
+        corridas = []
 
     return render_template("admin.html", corridas=corridas)
 
 
-# LOGOUT
+# =================================
+# LOGOUT ADM
+# =================================
+
 @app.route("/admin-logout")
 def admin_logout():
 
@@ -257,6 +291,10 @@ def admin_logout():
     return redirect("/")
 
 
+# =================================
+
 if __name__ == "__main__":
+
     port = int(os.environ.get("PORT", 5000))
+
     app.run(host="0.0.0.0", port=port)
