@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, session, redirect
+from flask import Flask, render_template, request, redirect, session
 import sqlite3
 import requests
 import random
@@ -9,26 +9,20 @@ app.secret_key = "motorista24h"
 
 DATABASE = "database.db"
 
-UPLOAD_FOLDER = "static/uploads"
-
-GOOGLE_API_KEY = "AIzaSyBnpIgc5k0bckNxjW4y4mDM4W-C9VRP8EQ"
-
-MODO_TESTE = True
+GOOGLE_API_KEY = "SUA_API_AQUI"
 
 ADMIN_USER = "Troia"
 ADMIN_PASS = "88691553"
 
-# motorista teste
-TESTE_USER = "motorista"
-TESTE_PASS = "1234"
 
-
+# conexão banco
 def db():
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     return conn
 
 
+# criar tabelas
 def criar_tabelas():
 
     conn = db()
@@ -46,24 +40,7 @@ def criar_tabelas():
         distancia REAL,
         valor_total REAL,
         codigo_confirmacao TEXT,
-        status TEXT,
-        motorista_id INTEGER
-    )
-    """)
-
-    conn.execute("""
-    CREATE TABLE IF NOT EXISTS motoristas (
-
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nome TEXT,
-        endereco TEXT,
-        cpf TEXT,
-        cnh TEXT,
-        placa TEXT,
-        telefone TEXT,
-        aprovado INTEGER DEFAULT 0,
-        online INTEGER DEFAULT 0,
-        avaliacao REAL DEFAULT 5
+        status TEXT
     )
     """)
 
@@ -74,21 +51,12 @@ def criar_tabelas():
 criar_tabelas()
 
 
-def db_conn():
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
-# =================================
-# VALIDAR CNPJ
-# =================================
-
+# validar cnpj
 def validar_cnpj(cnpj):
 
-    url = f"https://brasilapi.com.br/api/cnpj/v1/{cnpj}"
-
     try:
+
+        url = f"https://brasilapi.com.br/api/cnpj/v1/{cnpj}"
 
         r = requests.get(url)
 
@@ -96,9 +64,7 @@ def validar_cnpj(cnpj):
 
             data = r.json()
 
-            empresa = data.get("razao_social", "Empresa")
-
-            return True, empresa
+            return True, data.get("razao_social")
 
         return False, None
 
@@ -106,14 +72,8 @@ def validar_cnpj(cnpj):
         return False, None
 
 
-# =================================
-# CALCULAR DISTANCIA
-# =================================
-
+# calcular distancia
 def calcular_distancia(origem, destino):
-
-    if MODO_TESTE:
-        return random.randint(3, 25)
 
     url = "https://maps.googleapis.com/maps/api/distancematrix/json"
 
@@ -124,24 +84,21 @@ def calcular_distancia(origem, destino):
         "language": "pt-BR"
     }
 
-    response = requests.get(url, params=params)
+    r = requests.get(url, params=params)
 
-    data = response.json()
+    data = r.json()
 
-    distancia_metros = data["rows"][0]["elements"][0]["distance"]["value"]
+    metros = data["rows"][0]["elements"][0]["distance"]["value"]
 
-    distancia_km = distancia_metros / 1000
+    km = metros / 1000
 
-    return round(distancia_km, 2)
+    return round(km, 2)
 
 
-# =================================
-# CALCULAR VALOR
-# =================================
-
+# calcular valor
 def calcular_valor(distancia, veiculo):
 
-    taxa_fixa = {
+    taxa = {
         "moto": 10,
         "carro": 12,
         "van": 15
@@ -149,7 +106,7 @@ def calcular_valor(distancia, veiculo):
 
     valor_km = 1.50
 
-    base = taxa_fixa[veiculo] + (distancia * valor_km)
+    base = taxa.get(veiculo, 12) + (distancia * valor_km)
 
     taxa_site = base * 0.10
 
@@ -158,10 +115,7 @@ def calcular_valor(distancia, veiculo):
     return round(total, 2)
 
 
-# =================================
-# PAGINA INICIAL
-# =================================
-
+# página inicial
 @app.route("/", methods=["GET", "POST"])
 def index():
 
@@ -190,7 +144,7 @@ def index():
             """
             INSERT INTO corridas
             (cnpj, empresa, telefone, origem, destino, veiculo, distancia, valor_total, codigo_confirmacao, status)
-            VALUES (?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?)
             """,
             (
                 cnpj,
@@ -202,7 +156,7 @@ def index():
                 distancia,
                 valor,
                 codigo,
-                "aguardando_confirmacao"
+                "aguardando_motorista"
             )
         )
 
@@ -221,77 +175,8 @@ def index():
     return render_template("index.html")
 
 
-# =================================
-# LOGIN MOTORISTA
-# =================================
-
-@app.route("/motorista-login", methods=["GET","POST"])
-def motorista_login():
-
-    if request.method == "POST":
-
-        user = request.form["usuario"]
-        senha = request.form["senha"]
-
-        if user == TESTE_USER and senha == TESTE_PASS:
-
-            session["motorista"] = "teste"
-
-            return redirect("/motorista-painel")
-
-        return "Login inválido"
-
-    return render_template("motorista_login.html")
-
-
-# =================================
-# PAINEL MOTORISTA
-# =================================
-
-@app.route("/motorista-painel")
-def motorista_painel():
-
-    if not session.get("motorista"):
-        return redirect("/motorista-login")
-
-    conn = db()
-
-    corridas = conn.execute("""
-    SELECT * FROM corridas
-    WHERE status = 'aguardando_motorista'
-    """).fetchall()
-
-    conn.close()
-
-    return render_template("motorista_painel.html", corridas=corridas)
-
-
-# =================================
-# ACEITAR CORRIDA
-# =================================
-
-@app.route("/aceitar/<int:id>")
-def aceitar_corrida(id):
-
-    conn = db()
-
-    conn.execute("""
-    UPDATE corridas
-    SET status='em_andamento', motorista_id=1
-    WHERE id=?
-    """,(id,))
-
-    conn.commit()
-    conn.close()
-
-    return redirect("/motorista-painel")
-
-
-# =================================
-# LOGIN ADM
-# =================================
-
-@app.route("/admin-login", methods=["GET","POST"])
+# login ADM
+@app.route("/admin-login", methods=["GET", "POST"])
 def admin_login():
 
     if request.method == "POST":
@@ -305,13 +190,12 @@ def admin_login():
 
             return redirect("/admin")
 
+        return "Login inválido"
+
     return render_template("admin_login.html")
 
 
-# =================================
-# PAINEL ADM
-# =================================
-
+# painel ADM
 @app.route("/admin")
 def admin():
 
@@ -320,21 +204,13 @@ def admin():
 
     conn = db()
 
-    corridas = conn.execute("""
-    SELECT * FROM corridas ORDER BY id DESC
-    """).fetchall()
-
-    motoristas = conn.execute("""
-    SELECT * FROM motoristas
-    """).fetchall()
+    corridas = conn.execute(
+        "SELECT * FROM corridas ORDER BY id DESC"
+    ).fetchall()
 
     conn.close()
 
-    return render_template(
-        "admin.html",
-        corridas=corridas,
-        motoristas=motoristas
-    )
+    return render_template("admin.html", corridas=corridas)
 
 
 if __name__ == "__main__":
