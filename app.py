@@ -9,19 +9,10 @@ app.secret_key = "motorista24h"
 
 DATABASE = "database.db"
 
-# =================================
-# CONFIGURAÇÕES
-# =================================
-
 GOOGLE_API_KEY = "AIzaSyBnpIgc5k0bckNxjW4y4mDM4W-C9VRP8EQ"
 
-# modo teste evita usar google maps
 MODO_TESTE = True
 
-
-# =================================
-# BANCO DE DADOS
-# =================================
 
 def db():
     conn = sqlite3.connect(DATABASE)
@@ -65,10 +56,6 @@ def criar_tabelas():
 criar_tabelas()
 
 
-# =================================
-# VALIDAR CNPJ
-# =================================
-
 def validar_cnpj(cnpj):
 
     url = f"https://brasilapi.com.br/api/cnpj/v1/{cnpj}"
@@ -90,10 +77,6 @@ def validar_cnpj(cnpj):
     except:
         return False, None
 
-
-# =================================
-# CALCULAR DISTANCIA
-# =================================
 
 def calcular_distancia(origem, destino):
 
@@ -120,10 +103,6 @@ def calcular_distancia(origem, destino):
     return round(distancia_km, 2)
 
 
-# =================================
-# CALCULAR VALOR
-# =================================
-
 def calcular_valor(distancia, veiculo):
 
     taxa_fixa = {
@@ -142,10 +121,6 @@ def calcular_valor(distancia, veiculo):
 
     return round(total, 2)
 
-
-# =================================
-# PAGINA INICIAL
-# =================================
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -206,10 +181,6 @@ def index():
     return render_template("index.html")
 
 
-# =================================
-# CONFIRMAR CODIGO
-# =================================
-
 @app.route("/confirmar", methods=["POST"])
 def confirmar():
 
@@ -236,12 +207,8 @@ def confirmar():
     return "Código incorreto"
 
 
-# =================================
-# VER CORRIDAS (PAINEL TESTE)
-# =================================
-
-@app.route("/corridas")
-def corridas():
+@app.route("/admin")
+def admin():
 
     conn = db()
 
@@ -251,10 +218,8 @@ def corridas():
 
     conn.close()
 
-    return render_template("corridas.html", corridas=corridas)
+    return render_template("admin.html", corridas=corridas)
 
-
-# =================================
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
