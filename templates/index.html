@@ -9,7 +9,6 @@
 <style>
 
 body{
-
 margin:0;
 font-family:Arial, Helvetica, sans-serif;
 
@@ -22,11 +21,9 @@ height:100vh;
 
 display:flex;
 flex-direction:column;
-
 }
 
 header{
-
 display:flex;
 justify-content:space-between;
 align-items:center;
@@ -35,25 +32,19 @@ padding:20px 40px;
 
 background:rgba(0,0,0,0.5);
 color:white;
-
 }
 
 .logo{
-
 font-size:28px;
 font-weight:bold;
-
 }
 
 .top-buttons{
-
 display:flex;
 gap:15px;
-
 }
 
 .top-buttons a{
-
 text-decoration:none;
 color:white;
 
@@ -63,17 +54,14 @@ background:#222;
 border-radius:6px;
 
 font-size:14px;
-
 }
 
 .container{
-
 flex:1;
 
 display:flex;
 justify-content:center;
 align-items:center;
-
 }
 
 .form-box{
@@ -93,23 +81,16 @@ text-align:center;
 }
 
 .form-box h2{
-
 margin-bottom:20px;
-
 }
 
 input,select{
-
 width:100%;
-
 padding:10px;
-
 margin-bottom:12px;
 
 border:1px solid #ccc;
-
 border-radius:6px;
-
 }
 
 button{
@@ -133,9 +114,7 @@ cursor:pointer;
 }
 
 button:hover{
-
 background:#cc0000;
-
 }
 
 </style>
@@ -147,15 +126,12 @@ background:#cc0000;
 <header>
 
 <div class="logo">
-
 Motorista24H
-
 </div>
 
 <div class="top-buttons">
 
 <a href="/admin">Painel ADM</a>
-
 <a href="/motorista">🪖 Entrar / Cadastrar</a>
 
 </div>
@@ -168,7 +144,7 @@ Motorista24H
 
 <h2>Solicite um Motorista Urgente</h2>
 
-<form method="POST" action="/calcular">
+<form method="POST">
 
 <input type="text" name="cnpj" placeholder="CNPJ" required>
 
