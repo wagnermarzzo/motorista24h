@@ -9,7 +9,7 @@ app.secret_key = "motorista24h"
 
 DATABASE = "database.db"
 
-GOOGLE_API_KEY = "SUA_API_AQUI"
+GOOGLE_API_KEY = "AIzaSyBnpIgc5k0bckNxjW4y4mDM4W-C9VRP8EQ"
 
 ADMIN_USER = "Troia"
 ADMIN_PASS = "88691553"
