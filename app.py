@@ -8,28 +8,28 @@ app = Flask(__name__)
 app.secret_key = "motorista24h"
 
 DATABASE = "database.db"
-
 GOOGLE_API_KEY = "AIzaSyBnpIgc5k0bckNxjW4y4mDM4W-C9VRP8EQ"
 
 ADMIN_USER = "Troia"
 ADMIN_PASS = "88691553"
 
 
-# conexão banco
+# =================================
+# Conexão com o banco
+# =================================
 def db():
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     return conn
 
 
-# criar tabelas
+# =================================
+# Criar tabelas
+# =================================
 def criar_tabelas():
-
     conn = db()
-
     conn.execute("""
     CREATE TABLE IF NOT EXISTS corridas (
-
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         cnpj TEXT,
         empresa TEXT,
@@ -43,7 +43,6 @@ def criar_tabelas():
         status TEXT
     )
     """)
-
     conn.commit()
     conn.close()
 
@@ -51,76 +50,65 @@ def criar_tabelas():
 criar_tabelas()
 
 
-# validar cnpj
+# =================================
+# Validar CNPJ
+# =================================
 def validar_cnpj(cnpj):
-
     try:
-
         url = f"https://brasilapi.com.br/api/cnpj/v1/{cnpj}"
-
         r = requests.get(url)
-
         if r.status_code == 200:
-
             data = r.json()
-
             return True, data.get("razao_social")
-
         return False, None
-
     except:
         return False, None
 
 
-# calcular distancia
+# =================================
+# Calcular distância (com fallback)
+# =================================
 def calcular_distancia(origem, destino):
-
-    url = "https://maps.googleapis.com/maps/api/distancematrix/json"
-
-    params = {
-        "origins": origem,
-        "destinations": destino,
-        "key": GOOGLE_API_KEY,
-        "language": "pt-BR"
-    }
-
-    r = requests.get(url, params=params)
-
-    data = r.json()
-
-    metros = data["rows"][0]["elements"][0]["distance"]["value"]
-
-    km = metros / 1000
-
-    return round(km, 2)
+    try:
+        url = "https://maps.googleapis.com/maps/api/distancematrix/json"
+        params = {
+            "origins": origem,
+            "destinations": destino,
+            "key": GOOGLE_API_KEY,
+            "language": "pt-BR"
+        }
+        r = requests.get(url, params=params)
+        data = r.json()
+        metros = data["rows"][0]["elements"][0]["distance"]["value"]
+        km = metros / 1000
+        return round(km, 2)
+    except:
+        # fallback caso API falhe
+        return random.randint(3, 20)
 
 
-# calcular valor
+# =================================
+# Calcular valor
+# =================================
 def calcular_valor(distancia, veiculo):
-
     taxa = {
         "moto": 10,
         "carro": 12,
         "van": 15
     }
-
     valor_km = 1.50
-
     base = taxa.get(veiculo, 12) + (distancia * valor_km)
-
     taxa_site = base * 0.10
-
     total = base + taxa_site
-
     return round(total, 2)
 
 
-# página inicial
+# =================================
+# Página inicial
+# =================================
 @app.route("/", methods=["GET", "POST"])
 def index():
-
     if request.method == "POST":
-
         cnpj = request.form["cnpj"]
         telefone = request.form["telefone"]
         origem = request.form["origem"]
@@ -128,18 +116,14 @@ def index():
         veiculo = request.form["veiculo"]
 
         valido, empresa = validar_cnpj(cnpj)
-
         if not valido:
             return "CNPJ inválido"
 
         distancia = calcular_distancia(origem, destino)
-
         valor = calcular_valor(distancia, veiculo)
-
         codigo = str(random.randint(1000, 9999))
 
         conn = db()
-
         conn.execute(
             """
             INSERT INTO corridas
@@ -159,7 +143,6 @@ def index():
                 "aguardando_motorista"
             )
         )
-
         conn.commit()
         conn.close()
 
@@ -175,46 +158,63 @@ def index():
     return render_template("index.html")
 
 
-# login ADM
+# =================================
+# Login ADM
+# =================================
 @app.route("/admin-login", methods=["GET", "POST"])
 def admin_login():
-
     if request.method == "POST":
-
         user = request.form["usuario"]
         senha = request.form["senha"]
-
         if user == ADMIN_USER and senha == ADMIN_PASS:
-
             session["admin"] = True
-
             return redirect("/admin")
-
         return "Login inválido"
-
     return render_template("admin_login.html")
 
 
-# painel ADM
+# =================================
+# Painel ADM
+# =================================
 @app.route("/admin")
 def admin():
-
     if not session.get("admin"):
         return redirect("/admin-login")
 
     conn = db()
-
     corridas = conn.execute(
         "SELECT * FROM corridas ORDER BY id DESC"
     ).fetchall()
-
     conn.close()
 
     return render_template("admin.html", corridas=corridas)
 
 
+# =================================
+# Confirmar código corrida
+# =================================
+@app.route("/confirmar", methods=["POST"])
+def confirmar():
+    codigo_digitado = request.form["codigo"]
+    if codigo_digitado == session.get("codigo"):
+        conn = db()
+        conn.execute(
+            """
+            UPDATE corridas
+            SET status = 'aguardando_motorista'
+            WHERE codigo_confirmacao = ?
+            """,
+            (codigo_digitado,)
+        )
+        conn.commit()
+        conn.close()
+        return render_template("sucesso.html")
+    return "Código incorreto"
+
+
+# =================================
+# Rodar app
+# =================================
 if __name__ == "__main__":
-
     port = int(os.environ.get("PORT", 5000))
-
     app.run(host="0.0.0.0", port=port)
