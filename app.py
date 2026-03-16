@@ -9,12 +9,18 @@ app.secret_key = "motorista24h"
 
 DATABASE = "database.db"
 
+UPLOAD_FOLDER = "static/uploads"
+
 GOOGLE_API_KEY = "AIzaSyBnpIgc5k0bckNxjW4y4mDM4W-C9VRP8EQ"
 
 MODO_TESTE = True
 
 ADMIN_USER = "Troia"
 ADMIN_PASS = "88691553"
+
+# motorista teste
+TESTE_USER = "motorista"
+TESTE_PASS = "1234"
 
 
 def db():
@@ -31,24 +37,33 @@ def criar_tabelas():
     CREATE TABLE IF NOT EXISTS corridas (
 
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-
         cnpj TEXT,
         empresa TEXT,
         telefone TEXT,
-
         origem TEXT,
         destino TEXT,
-
         veiculo TEXT,
-
         distancia REAL,
-
         valor_total REAL,
-
         codigo_confirmacao TEXT,
+        status TEXT,
+        motorista_id INTEGER
+    )
+    """)
 
-        status TEXT
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS motoristas (
 
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT,
+        endereco TEXT,
+        cpf TEXT,
+        cnh TEXT,
+        placa TEXT,
+        telefone TEXT,
+        aprovado INTEGER DEFAULT 0,
+        online INTEGER DEFAULT 0,
+        avaliacao REAL DEFAULT 5
     )
     """)
 
@@ -57,6 +72,12 @@ def criar_tabelas():
 
 
 criar_tabelas()
+
+
+def db_conn():
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 
 # =================================
@@ -169,7 +190,7 @@ def index():
             """
             INSERT INTO corridas
             (cnpj, empresa, telefone, origem, destino, veiculo, distancia, valor_total, codigo_confirmacao, status)
-            VALUES (?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?)
             """,
             (
                 cnpj,
@@ -201,54 +222,88 @@ def index():
 
 
 # =================================
-# CONFIRMAR CODIGO
+# LOGIN MOTORISTA
 # =================================
 
-@app.route("/confirmar", methods=["POST"])
-def confirmar():
+@app.route("/motorista-login", methods=["GET","POST"])
+def motorista_login():
 
-    codigo_digitado = request.form["codigo"]
+    if request.method == "POST":
 
-    if codigo_digitado == session.get("codigo"):
+        user = request.form["usuario"]
+        senha = request.form["senha"]
 
-        conn = db()
+        if user == TESTE_USER and senha == TESTE_PASS:
 
-        conn.execute(
-            """
-            UPDATE corridas
-            SET status = 'aguardando_motorista'
-            WHERE codigo_confirmacao = ?
-            """,
-            (codigo_digitado,)
-        )
+            session["motorista"] = "teste"
 
-        conn.commit()
-        conn.close()
+            return redirect("/motorista-painel")
 
-        return render_template("sucesso.html")
+        return "Login inválido"
 
-    return "Código incorreto"
+    return render_template("motorista_login.html")
+
+
+# =================================
+# PAINEL MOTORISTA
+# =================================
+
+@app.route("/motorista-painel")
+def motorista_painel():
+
+    if not session.get("motorista"):
+        return redirect("/motorista-login")
+
+    conn = db()
+
+    corridas = conn.execute("""
+    SELECT * FROM corridas
+    WHERE status = 'aguardando_motorista'
+    """).fetchall()
+
+    conn.close()
+
+    return render_template("motorista_painel.html", corridas=corridas)
+
+
+# =================================
+# ACEITAR CORRIDA
+# =================================
+
+@app.route("/aceitar/<int:id>")
+def aceitar_corrida(id):
+
+    conn = db()
+
+    conn.execute("""
+    UPDATE corridas
+    SET status='em_andamento', motorista_id=1
+    WHERE id=?
+    """,(id,))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/motorista-painel")
 
 
 # =================================
 # LOGIN ADM
 # =================================
 
-@app.route("/admin-login", methods=["GET", "POST"])
+@app.route("/admin-login", methods=["GET","POST"])
 def admin_login():
 
     if request.method == "POST":
 
-        usuario = request.form["usuario"]
+        user = request.form["usuario"]
         senha = request.form["senha"]
 
-        if usuario == ADMIN_USER and senha == ADMIN_PASS:
+        if user == ADMIN_USER and senha == ADMIN_PASS:
 
             session["admin"] = True
 
             return redirect("/admin")
-
-        return "Login inválido"
 
     return render_template("admin_login.html")
 
@@ -263,35 +318,24 @@ def admin():
     if not session.get("admin"):
         return redirect("/admin-login")
 
-    try:
+    conn = db()
 
-        conn = db()
+    corridas = conn.execute("""
+    SELECT * FROM corridas ORDER BY id DESC
+    """).fetchall()
 
-        corridas = conn.execute(
-            "SELECT * FROM corridas ORDER BY id DESC"
-        ).fetchall()
+    motoristas = conn.execute("""
+    SELECT * FROM motoristas
+    """).fetchall()
 
-        conn.close()
+    conn.close()
 
-    except:
-        corridas = []
+    return render_template(
+        "admin.html",
+        corridas=corridas,
+        motoristas=motoristas
+    )
 
-    return render_template("admin.html", corridas=corridas)
-
-
-# =================================
-# LOGOUT ADM
-# =================================
-
-@app.route("/admin-logout")
-def admin_logout():
-
-    session.pop("admin", None)
-
-    return redirect("/")
-
-
-# =================================
 
 if __name__ == "__main__":
 
